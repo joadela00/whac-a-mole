@@ -1,1 +1,1253 @@
 
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>덩이 잡기</title>
+  <style>
+    :root {
+      --bg: #9ddf3a;
+      --panel: #8b4d1f;
+      --panel-dark: #5d2e11;
+      --panel-light: #c77a32;
+      --text: #ffe45a;
+      --white: #fff8df;
+      --cell-size: clamp(88px, 26vw, 118px);
+      --gap: clamp(6px, 2vw, 10px);
+      --board-size: calc(var(--cell-size) * 3);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Pretendard', 'Noto Sans KR', 'Segoe UI', sans-serif;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      touch-action: manipulation;
+      color: #3b240f;
+      overscroll-behavior: none;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: min(100vw, 480px);
+      height: 100dvh;
+      max-height: 100dvh;
+      position: relative;
+      overflow: visible;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      background-color: #9ddf3a;
+      background-image: url('assets/bg_meadow.png');
+      background-position: center center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    body.miss-flash .app {
+      animation: missFlash 220ms ease-out;
+    }
+
+    @keyframes missFlash {
+      0% { filter: brightness(1) saturate(1); }
+      25% { filter: brightness(0.9) saturate(1.2); }
+      100% { filter: brightness(1) saturate(1); }
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Blur active screen during countdown (restart only) */
+    .app.counting .screen.active {
+      filter: blur(2px);
+      pointer-events: none;
+    }
+
+    .start-screen,
+    .gameover-screen {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .title-board,
+    .result-board,
+    .hud-box {
+      border: 4px solid var(--panel-dark);
+      background: linear-gradient(var(--panel-light), var(--panel));
+      border-radius: 18px;
+      box-shadow: inset 0 -6px 0 rgba(0,0,0,0.18);
+      color: var(--text);
+      font-weight: 900;
+      text-shadow: 2px 2px 0 #7b3300;
+    }
+
+    .title-board {
+      padding: 14px 22px;
+      font-size: clamp(24px, 7vw, 40px);
+    }
+
+    .title-board.title-image {
+      padding: 0;
+      width: 360px;
+      height: 220px;
+      background: url('assets/title.png') center/contain no-repeat;
+      border: none;
+      box-shadow: none;
+      text-indent: -9999px;
+      animation: floatTitle 1.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatTitle {
+      0%   { transform: translateY(0); }
+      45%  { transform: translateY(-16px); }
+      100% { transform: translateY(2px); }
+    }
+
+    .hero-hole {
+      width: 180px;
+      height: 150px;
+      position: relative;
+    }
+
+    .hero-hole .hole,
+    .hero-hole .mole {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hero-hole .hole {
+      bottom: 0;
+      width: 150px;
+      height: 72px;
+    }
+
+    .hero-hole .mole {
+      bottom: -28px;
+      width: 108px;
+      height: 108px;
+      animation: bob 1.1s ease-in-out infinite alternate;
+      opacity: 1;
+    }
+
+    .start-screen .hero-hole .mole {
+      animation: bob 1.1s ease-in-out infinite alternate, startMoleLoop 8s ease-in-out infinite;
+      opacity: 1;
+      animation-delay: 0s, 0s;
+    }
+
+    .gameover-screen .hero-hole .mole {
+      opacity: 1;
+    }
+
+    @keyframes bob {
+      from { transform: translateX(-50%) translateY(0); }
+      to { transform: translateX(-50%) translateY(-6px); }
+    }
+
+    @keyframes startMoleLoop {
+      0%   { opacity: 0; }
+      10%  { opacity: 1; }
+      60%  { opacity: 1; }
+      70%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes floatIdle {
+      0%    { transform: translateX(-50%) translateY(10px);  opacity: 0; }
+      12%   { transform: translateX(-50%) translateY(2px);   opacity: 0.45; }
+      30%   { transform: translateX(-50%) translateY(-9px);  opacity: 1; }
+      48%   { transform: translateX(-50%) translateY(-5px);  opacity: 1; }
+      65%   { transform: translateX(-50%) translateY(-1px);  opacity: 0.75; }
+      78%   { transform: translateX(-50%) translateY(4px);   opacity: 0.35; }
+      88%   { transform: translateX(-50%) translateY(9px);   opacity: 0; }
+      100%  { transform: translateX(-50%) translateY(9px);   opacity: 0; } /* 쉬는 구간 */
+    }
+
+    .pixel-btn {
+      width: min(280px, 64vw);
+      height: 86px;
+      min-height: 60px;
+      padding: 0;
+      border: 0;
+      background: transparent url('assets/start_button.png') center/contain no-repeat;
+      cursor: pointer;
+      display: block;
+      transition: transform 60ms ease, filter 60ms ease;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .pixel-btn:active {
+      transform: translateY(8px) scale(0.9);
+      filter: brightness(0.88);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+    }
+
+    .game-screen {
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 10px 18px;
+
+      /* new spacing */
+      gap: clamp(18px, 4vh, 26px);
+      overflow: visible;
+    }
+
+    .hud {
+      width: min(94%, 430px);
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .hud-box {
+      position: relative;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 94px;
+      min-height: 94px;
+      background: transparent;
+      border: none;
+      color: #5d2e11;
+      box-shadow: none;
+      line-height: 1;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hud-timeicon img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      image-rendering: auto;
+    }
+
+    .hud-timeicon strong {
+      position: absolute;
+      left: 50%;
+      top: 57%;
+      transform: translate(-50%, -50%) !important;
+      display: inline-block;
+      margin: 0;
+      color: #82e7ff !important;
+      text-shadow:
+        1px 1px 0 #0f5d78,
+        0 2px 10px rgba(0,160,255,0.35) !important;
+      font-size: 20px !important;
+      background: none !important;
+      border: none !important;
+      pointer-events: none;
+    }
+
+    .hud-timeicon {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hud-box strong {
+      display: inline-block;
+      padding: 6px 12px;
+      min-width: 58px;
+      text-align: center;
+      transform: translateX(0);
+      font-size: 20px;
+      background: none;
+      border: none;
+      color: #ffd500;
+      text-shadow:
+        1.5px 1.5px 0 #744800,
+        0 2px 10px rgba(0,0,0,0.25);
+      letter-spacing: 0.5px;
+    }
+
+    .hud-score {
+      flex: 1;
+      justify-content: center;
+      font-size: 18px;
+      margin-left: 0;
+      background: url('assets/scor.png') center/contain no-repeat;
+      background-size: contain;
+      transform: translateY(6px);  /* 양수면 아래로 내려감 */
+      background-repeat: no-repeat;
+      min-width: 0;
+      padding: 0 10px;
+    }
+
+    .clock {
+      font-size: 24px;
+      color: #82e7ff;
+      filter: drop-shadow(1px 1px 0 #0f5d78) drop-shadow(0 0 8px rgba(0,160,255,0.35));
+    }
+
+    .progressWrap {
+      position: relative;
+      width: min(94%, 430px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progressTrack {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(#2b1d0c, #1f1408);
+      border: 3px solid #5a3a14;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.25), 0 2px 0 rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .time-readout {
+      font-size: 22px;
+      font-weight: 900;
+      color: #82e7ff;
+      text-shadow:
+        1.2px 1.2px 0 #0f5d78,
+        0 2px 10px rgba(0,160,255,0.35);
+    }
+
+    .progressFill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #6fd94d 0%, #f6c63b 65%, #ff8a3c 100%);
+      opacity: 0.9;
+      transition: width 160ms linear, filter 160ms linear;
+    }
+
+    .board {
+      width: var(--board-size);
+      height: var(--board-size);
+
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+
+      user-select: none;
+      margin-top: clamp(60px, 12vh, 140px);
+
+      padding: 10px;
+      border-radius: 18px;
+
+      overflow: visible; /* allow effects to spill outside */
+      position: relative;
+      z-index: 1;
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      position: relative;
+      overflow: visible;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      z-index: 2;
+    }
+
+    .cell-variant-1 { background-position: 20% 30%; filter: brightness(0.97) saturate(1.05); }
+    .cell-variant-2 { background-position: -15% -10%; filter: brightness(1.05) saturate(0.95); }
+
+    .hole {
+      width: 100%;
+      height: 60%;
+      position: absolute;
+      left: 0;
+      bottom: 6%;
+      display: grid;
+      place-items: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .hole img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      image-rendering: pixelated;
+      transform: translateZ(0);
+    }
+
+    .mole {
+      width: 82%;
+      aspect-ratio: 1 / 1;
+      position: absolute;
+      left: 50%;
+      bottom: -8%;
+      transform: translateX(-50%) translateY(80%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+    }
+
+    .mole img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      transform: translateY(20%);
+    }
+
+    .cell.up .mole {
+      opacity: 1;
+      animation: molePop 220ms cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+      pointer-events: auto;
+    }
+
+    .fx-pop,
+    .fx-score {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      opacity: 0;
+      display: grid;
+      place-items: center;
+      z-index: 90;
+    }
+
+    .fx-pop {
+      bottom: 0%;
+      width: 120%;
+      aspect-ratio: 1 / 1;
+      filter: drop-shadow(0 0 6px rgba(255,195,80,0.6));
+      overflow: visible;
+    }
+
+    .fx-pop img,
+    .fx-score img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .fx-pop.show {
+      opacity: 1;
+      animation: popFx 520ms ease-out forwards;
+    }
+
+@keyframes popFx {
+      0%   { transform: translateX(-50%) scale(.6); opacity: 0; }
+      35%  { transform: translateX(-50%) scale(1.05); opacity: 1; }
+      70%  { transform: translateX(-50%) scale(1.2); opacity: .9; }
+      100% { transform: translateX(-50%) scale(1.3); opacity: 0; }
+    }
+
+    @keyframes molePop {
+      0%   { transform: translateX(-50%) translateY(80%) scale(0.92); opacity: 0; }
+      60%  { transform: translateX(-50%) translateY(6%)  scale(1.0);  opacity: 1; }
+      100% { transform: translateX(-50%) translateY(0%)  scale(1);    opacity: 1; }
+    }
+
+    .fx-score {
+      bottom: 38%;
+      width: 82%;
+      aspect-ratio: 1.2 / 1;
+      overflow: visible;
+    }
+
+    .fx-score.show {
+      animation: scoreFx 520ms ease-out forwards;
+    }
+
+@keyframes scoreFx {
+      from { transform: translateX(-50%) translateY(12px) scale(0.95); opacity: 0; }
+      25%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.08); }
+      to   { transform: translateX(-50%) translateY(-22px) scale(1.1); opacity: 0; }
+    }
+
+    .countdown {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 96px;
+      font-weight: 900;
+      color: #82e7ff;
+
+      text-shadow:
+        2px 2px 0 #0f5d78;
+
+      pointer-events: none;
+      z-index: 999;
+
+      width: 100%;
+      height: 100%;
+    }
+
+    .app.paused * {
+      animation-play-state: paused !important;
+      transition-duration: 0s !important;
+    }
+
+    .bottom-controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .circle-btn {
+      width: 86px;
+      height: 86px;
+      min-width: 64px;
+      min-height: 64px;
+      padding: 0;
+      border: 0;
+      background: transparent center/contain no-repeat;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 60ms ease, filter 60ms ease;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .pressed {
+      transform: translateY(3px) scale(0.96) !important;
+      filter: brightness(0.94) !important;
+      box-shadow: none !important;
+    }
+
+    .released {
+      animation: btnRebound 160ms ease-out;
+    }
+
+    @keyframes btnRebound {
+      0%   { transform: translateY(3px) scale(0.96); box-shadow: none; }
+      60%  { transform: translateY(-2px) scale(1.02); box-shadow: none; }
+      100% { transform: translateY(0) scale(1); box-shadow: none; }
+    }
+
+    .pause-btn { background-image: url('assets/pa.png'); }
+    .restart-small { background-image: url('assets/re.png'); }
+    .vibe-btn { background-image: url('assets/rrx.png'); }
+
+    .fx-score .bonus-label {
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffe46b;
+      padding: 0;
+      border-radius: 0;
+      background: none;
+      border: none;
+      box-shadow: none;
+      text-shadow:
+        1.5px 1.5px 0 #7b3300,
+        0 0 8px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+
+    .fx-score .bonus-label.bonus-timer {
+      font-size: 32px;
+      color: #82e7ff;
+      text-shadow:
+        1.5px 1.5px 0 #0f5d78,
+        0 0 10px rgba(0, 160, 255, 0.45);
+      background: none;
+      border: none;
+    }
+
+    .gameover-screen {
+      background: rgba(0,0,0,.08);
+      backdrop-filter: blur(2px);
+    }
+
+    .gameover-screen .hero-hole {
+      transform: translateY(-60px);
+      visibility: hidden;
+    }
+
+    .result-title {
+      padding: 14px 26px;
+      font-size: clamp(28px, 8vw, 42px);
+    }
+
+    .result-title.over-title {
+      padding: 0;
+      width: 280px;
+      height: 160px;
+      background: url('assets/over.png') center/contain no-repeat;
+      border: none;
+      box-shadow: none;
+      text-indent: -9999px;
+    }
+
+    .result-board {
+      padding: 0;
+      min-width: 240px;
+      font-size: 26px;
+      background: url('assets/fi_scor.png') center/contain no-repeat;
+      border: none;
+      box-shadow: none;
+      text-indent: -9999px;
+      position: relative;
+      height: 140px;
+      display: grid;
+      place-items: center;
+    }
+
+    .result-board strong {
+      display: block;
+      font-size: 48px;
+      margin-top: 0;
+      text-indent: 0;
+      color: #ffe56f;
+      text-shadow:
+        1.5px 1.5px 0 #7b3300,
+        0 2px 10px rgba(0,0,0,0.25);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="countdown" class="countdown hidden">3</div>
+    <section class="screen start-screen active" id="startScreen">
+      <div class="title-board title-image">두더지 잡기!</div>
+      <div class="hero-hole" style="margin-bottom: 50px;">
+        <div class="hole"><img src="assets/hole.png" alt=""></div>
+        <div class="mole"><img src="assets/char_idle.png" alt=""></div>
+      </div>
+      <button class="pixel-btn" id="startBtn" type="button" aria-label="START" style="margin-top: -20px;"></button>
+    </section>
+
+    <section class="screen game-screen" id="gameScreen">
+      <div class="hud">
+        <div class="hud-box hud-timeicon">
+          <img src="assets/time.png" alt="time icon">
+          <strong id="timeValue">30초</strong>
+        </div>
+        <div class="hud-box hud-score"><strong id="scoreValue">0</strong></div>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="bottom-controls">
+        <button class="circle-btn pause-btn" type="button" aria-label="Pause"></button>
+        <button class="circle-btn vibe-btn" type="button" aria-label="Vibrate"></button>
+        <button class="circle-btn restart-small" type="button" aria-label="Restart"></button>
+      </div>
+    </section>
+
+    <section class="screen gameover-screen" id="gameOverScreen">
+      <div class="result-title title-board over-title">GAME OVER</div>
+      <div class="result-board"><strong id="finalScore">0</strong></div>
+      <button class="pixel-btn" id="restartBtn" type="button" aria-label="RESTART" style="margin-top: 20px;"></button>
+    </section>
+  </div>
+
+  <script>
+    const appEl = document.querySelector('.app');
+    const startScreen = document.getElementById('startScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const pauseBtn = document.querySelector('.pause-btn');
+    const vibeBtn = document.querySelector('.vibe-btn');
+    const restartSmallBtn = document.querySelector('.restart-small');
+    const board = document.getElementById('board');
+    const scoreValue = document.getElementById('scoreValue');
+    const timeValue = document.getElementById('timeValue');
+    const finalScore = document.getElementById('finalScore');
+    const progressFill = document.getElementById('progressFill');
+
+    const GAME_TIME = 30;
+    const HOLE_COUNT = 9;
+    const MAX_ACTIVE = 3;
+    const BONUS_TIMER_CHANCE = 0.06;
+    const BONUS_SUPER_CHANCE = 0.08;
+    const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
+    const BONUS_TIME_ADD = 3;
+    const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
+    const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
+    const MACRO_MEAN_THRESHOLD = 80; // 평균 간격 80ms 이하(12.5cps)이면 의심
+    const SPAWN_PATTERNS = [
+      [0,1,2],
+      [3,4,5],
+      [6,7,8],
+      [0,4,8],
+      [2,4,6],
+      [1,4,7]
+    ];
+    const ASSETS = {
+      hole: 'assets/hole.png',
+      idle: 'assets/char_idle.png',
+      blink: 'assets/char_blink.png',
+      hand: 'assets/char_hand.png',
+      whand: 'assets/char_whand.png',
+      time: 'assets/char_time.png',
+      y: 'assets/char_y.png',
+      th: 'assets/char_th.png',
+      thx: 'assets/char_thx.png',
+      hit: 'assets/char_hit.png',
+      yx: 'assets/char_yx.png',
+      fire: 'assets/effect_fire.png',
+      fire2: 'assets/effect_fire2.png',
+      fire3: 'assets/effect_fire3.png',
+      plus: 'assets/score_plus.png',
+      plus2: 'assets/score_plus2.png',
+      plus5: 'assets/score_plus5.png',
+      minus5: 'assets/score_minus5.png',
+      rr: 'assets/rr.png',
+      rrx: 'assets/rrx.png',
+    };
+
+    let score = 0;
+    let timeLeft = GAME_TIME;
+    const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
+    const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 1100 + Math.random() * 600); // 더 느리게
+    const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
+    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'superPlus' | 'superMinus'
+    let combo = 0;
+    let lastHitAt = 0;
+    let allowInput = true;
+    let countingDown = false;
+    let paused = false;
+    let clickTimes = [];
+    let macroBlockUntil = 0;
+    let spawnWatchInterval = null;
+    let timerInterval = null;
+    let running = false;
+    let vibrateOn = false;
+
+    const cells = [];
+
+    function createBoard() {
+      board.innerHTML = '';
+      cells.length = 0;
+
+      for (let i = 0; i < HOLE_COUNT; i++) {
+        const cell = document.createElement('button');
+        cell.className = 'cell';
+        cell.type = 'button';
+        cell.setAttribute('aria-label', `${i + 1}번 구멍`);
+        cell.classList.add(`cell-variant-${Math.floor(Math.random() * 3)}`);
+        cell.innerHTML = `
+          <div class="hole"><img src="${ASSETS.hole}" alt=""></div>
+          <div class="mole" data-index="${i}"><img class="mole-img" src="${ASSETS.idle}" alt=""></div>
+          <div class="fx-pop"><img src="${ASSETS.fire}" alt=""></div>
+          <div class="fx-score"><img src="${ASSETS.plus}" alt="+1"></div>
+        `;
+
+        cell.addEventListener('pointerdown', () => hitMole(i));
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function setScreen(screen) {
+      [startScreen, gameScreen, gameOverScreen].forEach(el => el.classList.remove('active'));
+      screen.classList.add('active');
+    }
+
+    function resetGame() {
+      score = 0;
+      timeLeft = GAME_TIME;
+      combo = 0;
+      scoreValue.textContent = score;
+      timeValue.textContent = `${timeLeft}초`;
+      if (progressFill) progressFill.style.width = '100%';
+      clearInterval(timerInterval);
+      clearInterval(spawnWatchInterval);
+      holeTimers.forEach(t => {
+        clearTimeout(t.spawnTimer);
+        clearTimeout(t.hideTimer);
+        t.spawnTimer = null;
+        t.hideTimer = null;
+      });
+      holeActive.fill(false);
+      holeBonusType.fill('none');
+      combo = 0;
+      lastHitAt = 0;
+      cells.forEach(cell => {
+        cell.classList.remove('up');
+        cell.querySelector('.mole-img').src = ASSETS.idle;
+        cell.querySelector('.fx-pop').classList.remove('show');
+        cell.querySelector('.fx-score').classList.remove('show');
+      });
+      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+    }
+
+    function randomMoleSrc() {
+      const roll = Math.random();
+      if (roll < 0.23) return ASSETS.blink;
+      if (roll < 0.46) return ASSETS.hand;
+      if (roll < 0.69) return ASSETS.whand;
+      return ASSETS.idle;
+    }
+
+    function randomSuperSrc() {
+      return Math.random() < 0.5 ? ASSETS.y : ASSETS.th;
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function activeCount() {
+      return holeActive.reduce((n, v) => n + (v ? 1 : 0), 0);
+    }
+
+    function scheduleFreeSlots() {
+      if (Math.random() < 0.2) {
+        const pattern = SPAWN_PATTERNS[Math.floor(Math.random() * SPAWN_PATTERNS.length)];
+        pattern.forEach((i, idx) => {
+          if (!holeActive[i] && !holeTimers[i].spawnTimer) {
+            scheduleSpawn(i, 200 + idx * 180);
+          }
+        });
+        return;
+      }
+      const free = [];
+      for (let i = 0; i < HOLE_COUNT; i += 1) {
+        if (!holeActive[i] && !holeTimers[i].spawnTimer) free.push(i);
+      }
+      const need = Math.max(0, MAX_ACTIVE - activeCount());
+      shuffle(free).slice(0, need).forEach(i => {
+        scheduleSpawn(i, 300 + Math.random() * 600);
+      });
+    }
+
+    function hideMole(i) {
+      if (paused) return;
+      const timers = holeTimers[i];
+      clearTimeout(timers.hideTimer);
+      timers.hideTimer = null;
+      holeActive[i] = false;
+      holeBonusType[i] = 'none';
+      const cell = cells[i];
+      cell.classList.remove('up');
+      const moleImg = cell.querySelector('.mole-img');
+      moleImg.src = ASSETS.idle;
+      const plus = cell.querySelector('.fx-score');
+      if (plus) {
+        setTimeout(() => {
+          plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
+          plus.dataset.mode = '';
+        }, 560);
+      }
+    }
+
+    function scheduleSpawn(i, delay = 900 + Math.random() * 700) {
+      if (paused) return;
+      const timers = holeTimers[i];
+      clearTimeout(timers.spawnTimer);
+      timers.spawnTimer = setTimeout(() => spawnMole(i), delay);
+    }
+
+    function spawnMole(i) {
+      if (!running || paused) return;
+      const timers = holeTimers[i];
+      timers.spawnTimer = null;
+      const cell = cells[i];
+      if (cell.classList.contains('up')) return;
+      if (activeCount() >= MAX_ACTIVE) {
+        scheduleSpawn(i, 900 + Math.random() * 600);
+        return;
+      }
+
+      const roll = Math.random();
+      let bonus = 'none';
+      if (roll < BONUS_TIMER_CHANCE) {
+        bonus = 'timer';
+      } else if (roll < BONUS_TIMER_CHANCE + BONUS_SUPER_CHANCE) {
+        bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
+      }
+      holeBonusType[i] = bonus;
+
+      const moleImg = cell.querySelector('.mole-img');
+      if (bonus === 'timer') moleImg.src = ASSETS.time;
+      else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
+      else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
+      else moleImg.src = randomMoleSrc();
+
+      cell.classList.add('up');
+      holeActive[i] = true;
+
+      const visibleFor = Math.max(1200, holeSpeed[i] + Math.random() * 400);
+      timers.hideTimer = setTimeout(() => {
+        hideMole(i);
+        scheduleSpawn(i);
+      }, visibleFor);
+    }
+
+    function registerMiss() {
+      if (!allowInput || paused) return;
+      allowInput = false;
+      setTimeout(() => {
+        allowInput = true;
+      }, 500);
+      combo = 0;
+    }
+
+    function startCountdown(callback, useBlur = false) {
+      if (countingDown || running) return;
+      countingDown = true;
+      if (useBlur) appEl.classList.add('counting');
+      const cd = document.getElementById('countdown');
+      let n = 3;
+      cd.classList.remove('hidden');
+      cd.textContent = n;
+      const t = setInterval(() => {
+        n--;
+        if (n > 0) {
+          cd.textContent = n;
+        } else if (n === 0) {
+          cd.textContent = 'GO!';
+        } else {
+          clearInterval(t);
+          cd.classList.add('hidden');
+          countingDown = false;
+          appEl.classList.remove('counting');
+          callback();
+        }
+      }, 600);
+    }
+
+    function hitMole(index) {
+      if (!running || paused || !allowInput) return;
+      const now = Date.now();
+      if (now < macroBlockUntil) return;
+      clickTimes.push(now);
+      while (clickTimes.length && clickTimes[0] < now - 1000) clickTimes.shift();
+      if (clickTimes.length > 1) {
+        const intervals = [];
+        for (let i = 1; i < clickTimes.length; i += 1) {
+          intervals.push(clickTimes[i] - clickTimes[i - 1]);
+        }
+        const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
+        const std = Math.sqrt(variance);
+        const fastCps = clickTimes.length > MACRO_CPS_LIMIT;
+        const suspiciousPattern = mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD;
+        if (fastCps || suspiciousPattern) {
+          macroBlockUntil = now + 1500; // 1.5초 동안 점수 무효
+          registerMiss();
+          return;
+        }
+      }
+      const cell = cells[index];
+      if (!holeActive[index] || !cell.classList.contains('up')) {
+        registerMiss();
+        return;
+      }
+
+      const timers = holeTimers[index];
+      clearTimeout(timers.hideTimer);
+      timers.hideTimer = null;
+
+      const moleImg = cell.querySelector('.mole-img');
+      const pop = cell.querySelector('.fx-pop');
+      const plus = cell.querySelector('.fx-score');
+      let plusImg = plus.querySelector('img');
+      let label = plus.querySelector('.bonus-label');
+      const isBonusTimer = holeBonusType[index] === 'timer';
+      const isBonusSuperPlus = holeBonusType[index] === 'superPlus';
+      const isBonusSuperMinus = holeBonusType[index] === 'superMinus';
+
+      holeActive[index] = false;
+      if (now - lastHitAt > 500) combo = 0; // 0.5초 이상이면 콤보 리셋
+      combo = Math.min(combo + 1, 5);
+      if (isBonusSuperPlus) {
+        moleImg.src = ASSETS.thx;
+      } else if (isBonusSuperMinus) {
+        moleImg.src = ASSETS.yx;
+      } else {
+        moleImg.src = ASSETS.hit;
+      }
+      pop.classList.remove('show');
+      plus.classList.remove('show');
+      void pop.offsetWidth;
+      void plus.offsetWidth;
+      if (!isBonusTimer) {
+        pop.classList.add('show');
+      }
+      if (isBonusTimer) {
+        const bonusSpan = document.createElement('span');
+        bonusSpan.className = 'bonus-label bonus-timer';
+        bonusSpan.textContent = '+3s';
+        plus.replaceChildren(bonusSpan);
+        plus.dataset.mode = 'timer';
+        plusImg = null;
+        label = bonusSpan;
+      } else if (isBonusSuperPlus) {
+        pop.querySelector('img').src = ASSETS.fire3;
+        if (label) label.style.display = 'none';
+        plus.replaceChildren();
+        const img = document.createElement('img');
+        img.src = ASSETS.plus5;
+        img.alt = '+5';
+        plus.appendChild(img);
+        plusImg = img;
+        plus.dataset.mode = 'superPlus';
+        combo = 0;
+      } else if (isBonusSuperMinus) {
+        pop.querySelector('img').src = ASSETS.fire3;
+        if (label) label.style.display = 'none';
+        plus.replaceChildren();
+        const img = document.createElement('img');
+        img.src = ASSETS.minus5;
+        img.alt = '-5';
+        plus.appendChild(img);
+        plusImg = img;
+        plus.dataset.mode = 'superMinus';
+        combo = 0;
+      } else if (combo >= 2) {
+        pop.querySelector('img').src = ASSETS.fire2;
+        if (label) label.style.display = 'none';
+        if (plusImg) {
+          plusImg.style.display = 'block';
+          plusImg.src = ASSETS.plus2;
+        }
+        plus.dataset.mode = 'combo';
+      } else {
+        pop.querySelector('img').src = ASSETS.fire;
+        if (label) label.style.display = 'none';
+        if (plusImg) {
+          plusImg.style.display = 'block';
+          plusImg.src = ASSETS.plus;
+        }
+        plus.dataset.mode = 'normal';
+      }
+      plus.classList.add('show');
+
+      const isCombo = combo >= 2;
+      const addedScore = isBonusTimer ? 0
+                        : isBonusSuperPlus ? 5
+                        : isBonusSuperMinus ? -5
+                        : (isCombo ? 2 : 1);
+      score += addedScore;
+      scoreValue.textContent = score;
+      lastHitAt = now;
+      if (isBonusTimer) {
+        timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
+        timeValue.textContent = `${timeLeft}초`;
+        if (progressFill) progressFill.style.width = `${(timeLeft / GAME_TIME) * 100}%`;
+        combo = 0;
+      } else if (isBonusSuperPlus || isBonusSuperMinus) {
+        combo = 0;
+      } else if (isCombo) {
+        combo = 0; // 보너스 직후 콤보 초기화해 긴장감 유지
+      }
+
+      if (vibrateOn && navigator.vibrate) {
+        navigator.vibrate(isCombo ? [8, 20, 12] : 12);
+      }
+
+      setTimeout(() => {
+        hideMole(index);
+        scheduleSpawn(index, 120);
+      }, 220);
+    }
+
+    function startGame() {
+      resetGame();
+      running = true;
+      paused = false;
+      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+      setScreen(gameScreen);
+      const order = shuffle([...Array(HOLE_COUNT).keys()]);
+      order.slice(0, MAX_ACTIVE).forEach((i, idx) => {
+        scheduleSpawn(i, 200 + idx * 120);
+      });
+      order.slice(MAX_ACTIVE).forEach((i, idx) => {
+        const base = 1000 + Math.random() * 800;
+        scheduleSpawn(i, base + idx * 140);
+      });
+      spawnWatchInterval = setInterval(() => {
+        if (!running) return;
+        scheduleFreeSlots();
+      }, 1100);
+
+      timerInterval = setInterval(() => {
+        timeLeft -= 1;
+        timeValue.textContent = `${timeLeft}초`;
+        const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
+        if (progressFill) progressFill.style.width = `${pct * 100}%`;
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      running = false;
+      clearInterval(timerInterval);
+      clearInterval(spawnWatchInterval);
+      holeTimers.forEach(t => {
+        clearTimeout(t.spawnTimer);
+        clearTimeout(t.hideTimer);
+        t.spawnTimer = null;
+        t.hideTimer = null;
+      });
+      cells.forEach((_, i) => hideMole(i));
+      finalScore.textContent = score;
+      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+      setScreen(gameOverScreen);
+    }
+
+    startBtn.addEventListener('pointerdown', () => {
+      if (running || countingDown) return;
+      startCountdown(startGame, false);
+    });
+
+    restartBtn.addEventListener('pointerdown', () => {
+      if (running || countingDown) return;
+      startCountdown(startGame, true);
+    });
+
+    restartSmallBtn.addEventListener('pointerdown', () => {
+      if (countingDown) return;
+      // 모든 진행 중 로직 정지
+      running = false;
+      paused = false;
+      allowInput = true;
+      clearInterval(timerInterval);
+      clearInterval(spawnWatchInterval);
+      holeTimers.forEach(t => {
+        clearTimeout(t.spawnTimer);
+        clearTimeout(t.hideTimer);
+        t.spawnTimer = null;
+        t.hideTimer = null;
+      });
+      cells.forEach((_, i) => hideMole(i));
+      // 카운트다운 표시 숨김
+      const cd = document.getElementById('countdown');
+      cd.classList.add('hidden');
+      countingDown = false;
+      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+      // 완전히 첫 화면으로 이동
+      setScreen(startScreen);
+    });
+
+    vibeBtn.addEventListener('pointerdown', () => {
+      vibrateOn = !vibrateOn;
+      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+    });
+
+    pauseBtn.addEventListener('pointerdown', () => {
+      if (!running || countingDown) return;
+      paused = !paused;
+      if (paused) {
+        appEl.classList.add('paused');
+        allowInput = false;
+        clearInterval(timerInterval);
+        clearInterval(spawnWatchInterval);
+        pauseBtn.style.backgroundImage = "url('assets/ja.png')";
+        holeTimers.forEach(t => {
+          clearTimeout(t.spawnTimer);
+          clearTimeout(t.hideTimer);
+          t.spawnTimer = null;
+          t.hideTimer = null;
+        });
+      } else {
+        appEl.classList.remove('paused');
+        pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+        allowInput = true;
+        spawnWatchInterval = setInterval(() => {
+          if (!running || paused) return;
+          scheduleFreeSlots();
+        }, 1100);
+        timerInterval = setInterval(() => {
+          if (paused) return;
+          timeLeft -= 1;
+          timeValue.textContent = `${timeLeft}초`;
+          const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
+          if (progressFill) progressFill.style.width = `${pct * 100}%`;
+          if (timeLeft <= 0) {
+            endGame();
+          }
+        }, 1000);
+        // restart hides for visible moles
+        cells.forEach((cell, i) => {
+          if (holeActive[i] && !holeTimers[i].hideTimer) {
+            holeTimers[i].hideTimer = setTimeout(() => {
+              hideMole(i);
+              scheduleSpawn(i);
+            }, 700);
+          } else if (!holeActive[i] && !holeTimers[i].spawnTimer) {
+            scheduleSpawn(i, 500);
+          }
+        });
+      }
+    });
+
+    function bindPress(el) {
+      if (!el) return;
+      el.addEventListener('pointerdown', () => {
+        el.classList.add('pressed');
+        el.classList.remove('released');
+      });
+      const release = () => {
+        el.classList.remove('pressed');
+        el.classList.add('released');
+        setTimeout(() => el.classList.remove('released'), 180);
+      };
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointerleave', () => el.classList.remove('pressed'));
+    }
+
+    [startBtn, restartBtn, pauseBtn, restartSmallBtn, vibeBtn].forEach(bindPress);
+
+    createBoard();
+  </script>
+</body>
+</html>
