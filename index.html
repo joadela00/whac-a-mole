@@ -95,6 +95,7 @@
       position: absolute;
       inset: 0;
       display: none;
+      overflow: visible;
     }
 
     .screen.active {
@@ -401,7 +402,7 @@
       border: 0;
       padding: 0;
       z-index: 2;
-      contain: layout paint;
+      contain: layout;
       will-change: transform;
     }
 
@@ -469,6 +470,7 @@
       place-items: center;
       z-index: 90;
       will-change: transform, opacity;
+      overflow: visible;
     }
 
     .fx-pop {
@@ -710,7 +712,7 @@
     <section class="screen gameover-screen" id="gameOverScreen">
       <div class="result-title title-board over-title">GAME OVER</div>
       <div class="result-board"><strong id="finalScore">0</strong></div>
-      <button class="pixel-btn" id="restartBtn" type="button" aria-label="RESTART" style="margin-top: 20px;"></button>
+      <button class="pixel-btn" id="restartBtn" type="button" aria-label="RESTART" style="margin-top: -10px;"></button>
     </section>
   </div>
 
@@ -967,7 +969,7 @@
       allowInput = false;
       setTimeout(() => {
         allowInput = true;
-      }, 500);
+      }, 200);
       combo = 0;
     }
 
