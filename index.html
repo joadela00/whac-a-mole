@@ -5,6 +5,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>덩이 잡기</title>
+  <!-- Preload assets to reduce first-hit lag -->
+  <link rel="preload" as="image" href="assets/bg_meadow.png">
+  <link rel="preload" as="image" href="assets/hole.png">
+  <link rel="preload" as="image" href="assets/time.png">
+  <link rel="preload" as="image" href="assets/scor.png">
+  <link rel="preload" as="image" href="assets/start_button.png">
+  <link rel="preload" as="image" href="assets/pa.png">
+  <link rel="preload" as="image" href="assets/re.png">
+  <link rel="preload" as="image" href="assets/rr.png">
+  <link rel="preload" as="image" href="assets/rrx.png">
+  <link rel="preload" as="image" href="assets/char_idle.png">
+  <link rel="preload" as="image" href="assets/char_time.png">
+  <link rel="preload" as="image" href="assets/char_th.png">
+  <link rel="preload" as="image" href="assets/char_y.png">
+  <link rel="preload" as="image" href="assets/char_thx.png">
+  <link rel="preload" as="image" href="assets/char_yx.png">
+  <link rel="preload" as="image" href="assets/effect_fire.png">
+  <link rel="preload" as="image" href="assets/effect_fire2.png">
+  <link rel="preload" as="image" href="assets/effect_fire3.png">
+  <link rel="preload" as="image" href="assets/score_plus.png">
+  <link rel="preload" as="image" href="assets/score_plus2.png">
+  <link rel="preload" as="image" href="assets/score_plus5.png">
+  <link rel="preload" as="image" href="assets/score_minus5.png">
   <style>
     :root {
       --bg: #9ddf3a;
@@ -42,6 +65,7 @@
     .app {
       width: min(100vw, 480px);
       height: 100dvh;
+      min-height: 100vh; /* fallback for mobile browsers */
       max-height: 100dvh;
       position: relative;
       overflow: visible;
@@ -301,7 +325,7 @@
       margin-left: 0;
       background: url('assets/scor.png') center/contain no-repeat;
       background-size: contain;
-      transform: translateY(6px);  /* 양수면 아래로 내려감 */
+      transform: translateY(8px);  /* 양수면 아래로 내려감 */
       background-repeat: no-repeat;
       min-width: 0;
       padding: 0 10px;
@@ -377,6 +401,8 @@
       border: 0;
       padding: 0;
       z-index: 2;
+      contain: layout paint;
+      will-change: transform;
     }
 
     .cell-variant-1 { background-position: 20% 30%; filter: brightness(0.97) saturate(1.05); }
@@ -442,13 +468,13 @@
       display: grid;
       place-items: center;
       z-index: 90;
+      will-change: transform, opacity;
     }
 
     .fx-pop {
       bottom: 0%;
       width: 120%;
       aspect-ratio: 1 / 1;
-      filter: drop-shadow(0 0 6px rgba(255,195,80,0.6));
       overflow: visible;
     }
 
@@ -707,7 +733,7 @@
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
     const MAX_ACTIVE = 3;
-    const BONUS_TIMER_CHANCE = 0.06;
+    const BONUS_TIMER_CHANCE = 0.02;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
     const BONUS_TIME_ADD = 3;
@@ -819,6 +845,14 @@
         cell.querySelector('.fx-score').classList.remove('show');
       });
       vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+      preloadAssets();
+    }
+
+    function preloadAssets() {
+      Object.values(ASSETS).forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
     }
 
     function randomMoleSrc() {
@@ -921,7 +955,7 @@
       cell.classList.add('up');
       holeActive[i] = true;
 
-      const visibleFor = Math.max(1200, holeSpeed[i] + Math.random() * 400);
+      const visibleFor = Math.max(900, holeSpeed[i] + Math.random() * 300);
       timers.hideTimer = setTimeout(() => {
         hideMole(i);
         scheduleSpawn(i);
