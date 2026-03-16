@@ -305,7 +305,7 @@
     .hud-timeicon strong {
       position: absolute;
       left: 50%;
-      top: 63%;
+      top: 64%;
       transform: translate(-50%, -50%) !important;
       display: inline-block;
       margin: 0;
@@ -626,6 +626,10 @@
     .pause-btn { background-image: url('assets/pa.png'); }
     .restart-small { background-image: url('assets/re.png'); }
     .vibe-btn { background-image: url('assets/rrx.png'); display: block; }
+    @supports (-webkit-touch-callout: none) {
+      /* Hide vibration toggle on iOS */
+      .vibe-btn { display: none !important; }
+    }
 
     .fx-score .bonus-label {
       position: absolute;
@@ -1334,8 +1338,10 @@
       cancelCountdown();
       if (!countingDown) e.stopPropagation();
     });
-    // Any tap on screen cancels restart countdown
-    appEl.addEventListener('pointerdown', () => cancelCountdown(), true);
+    // Any tap on screen cancels restart countdown (mobile 포함)
+    ['pointerdown', 'touchstart', 'mousedown'].forEach(evt => {
+      appEl.addEventListener(evt, () => cancelCountdown(), { capture: true });
+    });
 
     createBoard();
   </script>
