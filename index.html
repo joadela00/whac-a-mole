@@ -28,7 +28,16 @@
   <link rel="preload" as="image" href="assets/score_plus2.png">
   <link rel="preload" as="image" href="assets/score_plus5.png">
   <link rel="preload" as="image" href="assets/score_minus5.png">
+  <link rel="preload" as="image" href="assets/fi_scor.png">
+  <link rel="preload" as="image" href="assets/over.png">
   <style>
+    /* iOS 감지용 */
+    :root {
+      --ios: 0;
+    }
+    @supports (-webkit-touch-callout: none) {
+      :root { --ios: 1; }
+    }
     :root {
       --bg: #9ddf3a;
       --panel: #8b4d1f;
@@ -116,6 +125,20 @@
       gap: 30px;
       padding: 24px;
       text-align: center;
+    }
+
+    /* HUD: lower icons and texts together */
+    .hud-timeicon img {
+      transform: translateY(4px);
+    }
+    .hud-timeicon strong {ㄱ
+      transform: translate(-50%, -50%) translateY(4px) !important;
+    }
+    .hud-score {
+      transform: translateY(12px) !important;
+    }
+    .hud-score strong {
+      transform: translateY(8px);
     }
 
     .title-board,
@@ -282,7 +305,7 @@
     .hud-timeicon strong {
       position: absolute;
       left: 50%;
-      top: 57%;
+      top: 63%;
       transform: translate(-50%, -50%) !important;
       display: inline-block;
       margin: 0;
@@ -309,7 +332,7 @@
       min-width: 58px;
       text-align: center;
       transform: translateX(0);
-      font-size: 20px;
+      font-size: 21px;
       background: none;
       border: none;
       color: #ffd500;
@@ -330,6 +353,11 @@
       background-repeat: no-repeat;
       min-width: 0;
       padding: 0 10px;
+    }
+
+    /* Enlarge in-game score digits slightly */
+    .hud-score strong {
+      font-size: 23px !important; /* 게임 중 스코어 점수부분 크기 */
     }
 
     .clock {
@@ -597,7 +625,7 @@
 
     .pause-btn { background-image: url('assets/pa.png'); }
     .restart-small { background-image: url('assets/re.png'); }
-    .vibe-btn { background-image: url('assets/rrx.png'); }
+    .vibe-btn { background-image: url('assets/rrx.png'); display: block; }
 
     .fx-score .bonus-label {
       position: absolute;
@@ -670,7 +698,7 @@
     .result-board strong {
       display: block;
       font-size: 48px;
-      margin-top: 0;
+      margin-top: 8px;  /* 숫자를 올리면 아래로 */
       text-indent: 0;
       color: #ffe56f;
       text-shadow:
@@ -712,11 +740,12 @@
     <section class="screen gameover-screen" id="gameOverScreen">
       <div class="result-title title-board over-title">GAME OVER</div>
       <div class="result-board"><strong id="finalScore">0</strong></div>
-      <button class="pixel-btn" id="restartBtn" type="button" aria-label="RESTART" style="margin-top: -10px;"></button>
+      <button class="pixel-btn" id="restartBtn" type="button" aria-label="RESTART" style="margin-top: 18px;"></button>
     </section>
   </div>
 
   <script>
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const appEl = document.querySelector('.app');
     const startScreen = document.getElementById('startScreen');
     const gameScreen = document.getElementById('gameScreen');
@@ -731,11 +760,16 @@
     const timeValue = document.getElementById('timeValue');
     const finalScore = document.getElementById('finalScore');
     const progressFill = document.getElementById('progressFill');
+    const countdownEl = document.getElementById('countdown');
+
+    if (vibeBtn && isiOS) {
+      vibeBtn.style.display = 'none';
+    }
 
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
     const MAX_ACTIVE = 3;
-    const BONUS_TIMER_CHANCE = 0.02;
+    const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
     const BONUS_TIME_ADD = 3;
@@ -790,6 +824,9 @@
     let timerInterval = null;
     let running = false;
     let vibrateOn = false;
+    let countdownTimer = null;
+    let allowCountdownCancel = false;
+    let countdownCancelArmed = false;
 
     const cells = [];
 
@@ -973,28 +1010,44 @@
       combo = 0;
     }
 
-    function startCountdown(callback, useBlur = false) {
+    function startCountdown(callback, useBlur = false, cancelable = false) {
       if (countingDown || running) return;
       countingDown = true;
+      allowCountdownCancel = cancelable;
+      countdownCancelArmed = false;
+      if (allowCountdownCancel) setTimeout(() => countdownCancelArmed = true, 60);
       if (useBlur) appEl.classList.add('counting');
-      const cd = document.getElementById('countdown');
       let n = 3;
-      cd.classList.remove('hidden');
-      cd.textContent = n;
-      const t = setInterval(() => {
+      countdownEl.classList.remove('hidden');
+      countdownEl.textContent = n;
+      countdownTimer = setInterval(() => {
         n--;
         if (n > 0) {
-          cd.textContent = n;
+          countdownEl.textContent = n;
         } else if (n === 0) {
-          cd.textContent = 'GO!';
+          countdownEl.textContent = 'GO!';
         } else {
-          clearInterval(t);
-          cd.classList.add('hidden');
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          countdownEl.classList.add('hidden');
           countingDown = false;
+          allowCountdownCancel = false;
+          countdownCancelArmed = false;
           appEl.classList.remove('counting');
           callback();
         }
       }, 600);
+    }
+
+    function cancelCountdown() {
+      if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      countingDown = false;
+      allowCountdownCancel = false;
+      countdownCancelArmed = false;
+      countdownEl.classList.add('hidden');
+      appEl.classList.remove('counting');
     }
 
     function hitMole(index) {
@@ -1186,32 +1239,13 @@
 
     restartBtn.addEventListener('pointerdown', () => {
       if (running || countingDown) return;
-      startCountdown(startGame, true);
+      startCountdown(startGame, true, true);
     });
 
     restartSmallBtn.addEventListener('pointerdown', () => {
       if (countingDown) return;
-      // 모든 진행 중 로직 정지
-      running = false;
-      paused = false;
-      allowInput = true;
-      clearInterval(timerInterval);
-      clearInterval(spawnWatchInterval);
-      holeTimers.forEach(t => {
-        clearTimeout(t.spawnTimer);
-        clearTimeout(t.hideTimer);
-        t.spawnTimer = null;
-        t.hideTimer = null;
-      });
-      cells.forEach((_, i) => hideMole(i));
-      // 카운트다운 표시 숨김
-      const cd = document.getElementById('countdown');
-      cd.classList.add('hidden');
-      countingDown = false;
-      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-      // 완전히 첫 화면으로 이동
-      setScreen(startScreen);
+      if (running) endGame();
+      startCountdown(startGame, true, true);
     });
 
     vibeBtn.addEventListener('pointerdown', () => {
@@ -1282,6 +1316,26 @@
     }
 
     [startBtn, restartBtn, pauseBtn, restartSmallBtn, vibeBtn].forEach(bindPress);
+
+    function cancelCountdown() {
+      if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      countdownEl.classList.add('hidden');
+      countingDown = false;
+      allowCountdownCancel = false;
+      countdownCancelArmed = false;
+      appEl.classList.remove('counting');
+    }
+
+    countdownEl.addEventListener('pointerdown', (e) => {
+      cancelCountdown();
+      if (!countingDown) e.stopPropagation();
+    });
+    // Any tap on screen cancels restart countdown
+    appEl.addEventListener('pointerdown', () => cancelCountdown(), true);
 
     createBoard();
   </script>
