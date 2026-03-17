@@ -749,602 +749,288 @@
     </section>
   </div>
 
-  <script>
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const appEl = document.querySelector('.app');
-    const startScreen = document.getElementById('startScreen');
-    const gameScreen = document.getElementById('gameScreen');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const startBtn = document.getElementById('startBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const pauseBtn = document.querySelector('.pause-btn');
-    const vibeBtn = document.querySelector('.vibe-btn');
-    const restartSmallBtn = document.querySelector('.restart-small');
-    const board = document.getElementById('board');
-    const scoreValue = document.getElementById('scoreValue');
-    const timeValue = document.getElementById('timeValue');
-    const finalScore = document.getElementById('finalScore');
-    const progressFill = document.getElementById('progressFill');
-    const countdownEl = document.getElementById('countdown');
+<script>
+const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const appEl = document.querySelector('.app');
+const startScreen = document.getElementById('startScreen');
+const gameScreen = document.getElementById('gameScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const pauseBtn = document.querySelector('.pause-btn');
+const vibeBtn = document.querySelector('.vibe-btn');
+const restartSmallBtn = document.querySelector('.restart-small');
+const board = document.getElementById('board');
+const scoreValue = document.getElementById('scoreValue');
+const timeValue = document.getElementById('timeValue');
+const finalScore = document.getElementById('finalScore');
+const countdownEl = document.getElementById('countdown');
 
-    if (vibeBtn && isiOS) {
-      vibeBtn.style.display = 'none';
-    }
+if (vibeBtn && isiOS) vibeBtn.style.display = 'none';
 
-    const GAME_TIME = 30;
-    const HOLE_COUNT = 9;
-    const MAX_ACTIVE = 3;
-    const BONUS_TIMER_CHANCE = 0.015;
-    const BONUS_SUPER_CHANCE = 0.08;
-    const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
-    const BONUS_TIME_ADD = 3;
-    const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
-    const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
-    const MACRO_MEAN_THRESHOLD = 80; // 평균 간격 80ms 이하(12.5cps)이면 의심
-    const SPAWN_PATTERNS = [
-      [0,1,2],
-      [3,4,5],
-      [6,7,8],
-      [0,4,8],
-      [2,4,6],
-      [1,4,7]
-    ];
-    const ASSETS = {
-      hole: 'assets/hole.png',
-      idle: 'assets/char_idle.png',
-      blink: 'assets/char_blink.png',
-      hand: 'assets/char_hand.png',
-      whand: 'assets/char_whand.png',
-      time: 'assets/char_time.png',
-      y: 'assets/char_y.png',
-      th: 'assets/char_th.png',
-      thx: 'assets/char_thx.png',
-      hit: 'assets/char_hit.png',
-      yx: 'assets/char_yx.png',
-      fire: 'assets/effect_fire.png',
-      fire2: 'assets/effect_fire2.png',
-      fire3: 'assets/effect_fire3.png',
-      plus: 'assets/score_plus.png',
-      plus2: 'assets/score_plus2.png',
-      plus5: 'assets/score_plus5.png',
-      minus5: 'assets/score_minus5.png',
-      rr: 'assets/rr.png',
-      rrx: 'assets/rrx.png',
-    };
+const GAME_TIME = 30;
+const HOLE_COUNT = 9;
+const MAX_ACTIVE = 3;
+const BONUS_TIMER_CHANCE = 0.015;
+const BONUS_SUPER_CHANCE = 0.08;
+const SUPER_MINUS_RATIO = 0.5;
+const BONUS_TIME_ADD = 3;
 
-    let score = 0;
-    let timeLeft = GAME_TIME;
-    const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
-    const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 1100 + Math.random() * 600); // 더 느리게
-    const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
-    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'superPlus' | 'superMinus'
-    let combo = 0;
-    let lastHitAt = 0;
-    let allowInput = true;
-    let countingDown = false;
-    let paused = false;
-    let clickTimes = [];
-    let macroBlockUntil = 0;
-    let spawnWatchInterval = null;
-    let timerInterval = null;
-    let running = false;
-    let vibrateOn = false;
-    let countdownTimer = null;
-    let allowCountdownCancel = false;
-    let countdownCancelArmed = false;
+const ASSETS = {
+  hole: 'assets/hole.png',
+  idle: 'assets/char_idle.png',
+  blink: 'assets/char_blink.png',
+  hand: 'assets/char_hand.png',
+  whand: 'assets/char_whand.png',
+  time: 'assets/char_time.png',
+  y: 'assets/char_y.png',
+  th: 'assets/char_th.png',
+  thx: 'assets/char_thx.png',
+  hit: 'assets/char_hit.png',
+  yx: 'assets/char_yx.png',
+  fire: 'assets/effect_fire.png',
+  fire2: 'assets/effect_fire2.png',
+  fire3: 'assets/effect_fire3.png',
+  plus: 'assets/score_plus.png',
+  plus2: 'assets/score_plus2.png',
+  plus5: 'assets/score_plus5.png',
+  minus5: 'assets/score_minus5.png',
+  rr: 'assets/rr.png',
+  rrx: 'assets/rrx.png',
+};
 
-    const cells = [];
+let score = 0;
+let timeLeft = GAME_TIME;
+let running = false;
+let paused = false;
+let countingDown = false;
 
-    function createBoard() {
-      board.innerHTML = '';
-      cells.length = 0;
+let allowCountdownCancel = false;
+let countdownCancelArmed = false;
+let countdownTimer = null;
 
-      for (let i = 0; i < HOLE_COUNT; i++) {
-        const cell = document.createElement('button');
-        cell.className = 'cell';
-        cell.type = 'button';
-        cell.setAttribute('aria-label', `${i + 1}번 구멍`);
-        cell.classList.add(`cell-variant-${Math.floor(Math.random() * 3)}`);
-        cell.innerHTML = `
-          <div class="hole"><img src="${ASSETS.hole}" alt=""></div>
-          <div class="mole" data-index="${i}"><img class="mole-img" src="${ASSETS.idle}" alt=""></div>
-          <div class="fx-pop"><img src="${ASSETS.fire}" alt=""></div>
-          <div class="fx-score"><img src="${ASSETS.plus}" alt="+1"></div>
-        `;
+let timerInterval = null;
+let spawnWatchInterval = null;
 
-        cell.addEventListener('pointerdown', () => hitMole(i));
-        board.appendChild(cell);
-        cells.push(cell);
-      }
-    }
+const cells = [];
+const holeActive = Array(HOLE_COUNT).fill(false);
+const holeBonusType = Array(HOLE_COUNT).fill('none');
+const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
 
-    function setScreen(screen) {
-      [startScreen, gameScreen, gameOverScreen].forEach(el => el.classList.remove('active'));
-      screen.classList.add('active');
-    }
+let combo = 0;
+let lastHitAt = 0;
+let allowInput = true;
+let vibrateOn = false;
 
-    function resetGame() {
-      score = 0;
-      timeLeft = GAME_TIME;
-      combo = 0;
-      scoreValue.textContent = score;
-      timeValue.textContent = `${timeLeft}초`;
-      if (progressFill) progressFill.style.width = '100%';
-      clearInterval(timerInterval);
-      clearInterval(spawnWatchInterval);
-      holeTimers.forEach(t => {
-        clearTimeout(t.spawnTimer);
-        clearTimeout(t.hideTimer);
-        t.spawnTimer = null;
-        t.hideTimer = null;
-      });
-      holeActive.fill(false);
-      holeBonusType.fill('none');
-      combo = 0;
-      lastHitAt = 0;
-      cells.forEach(cell => {
-        cell.classList.remove('up');
-        cell.querySelector('.mole-img').src = ASSETS.idle;
-        cell.querySelector('.fx-pop').classList.remove('show');
-        cell.querySelector('.fx-score').classList.remove('show');
-      });
-      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-      preloadAssets();
-    }
+function createBoard() {
+  board.innerHTML = '';
+  cells.length = 0;
 
-    function preloadAssets() {
-      Object.values(ASSETS).forEach(src => {
-        const img = new Image();
-        img.src = src;
-      });
-    }
+  for (let i = 0; i < HOLE_COUNT; i++) {
+    const cell = document.createElement('button');
+    cell.className = 'cell';
+    cell.innerHTML = `
+      <div class="hole"><img src="${ASSETS.hole}"></div>
+      <div class="mole"><img class="mole-img" src="${ASSETS.idle}"></div>
+      <div class="fx-pop"><img src="${ASSETS.fire}"></div>
+      <div class="fx-score"><img src="${ASSETS.plus}"></div>
+    `;
+    cell.addEventListener('pointerdown', () => hitMole(i));
+    board.appendChild(cell);
+    cells.push(cell);
+  }
+}
 
-    function randomMoleSrc() {
-      const roll = Math.random();
-      if (roll < 0.23) return ASSETS.blink;
-      if (roll < 0.46) return ASSETS.hand;
-      if (roll < 0.69) return ASSETS.whand;
-      return ASSETS.idle;
-    }
+function setScreen(s) {
+  [startScreen, gameScreen, gameOverScreen].forEach(el => el.classList.remove('active'));
+  s.classList.add('active');
+}
 
-    function randomSuperSrc() {
-      return Math.random() < 0.5 ? ASSETS.y : ASSETS.th;
-    }
+function resetGame() {
+  score = 0;
+  timeLeft = GAME_TIME;
+  combo = 0;
+  scoreValue.textContent = score;
+  timeValue.textContent = `${timeLeft}초`;
 
-    function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
+  holeActive.fill(false);
+  holeBonusType.fill('none');
 
-    function activeCount() {
-      return holeActive.reduce((n, v) => n + (v ? 1 : 0), 0);
-    }
+  holeTimers.forEach(t => {
+    clearTimeout(t.spawnTimer);
+    clearTimeout(t.hideTimer);
+    t.spawnTimer = null;
+    t.hideTimer = null;
+  });
 
-    function scheduleFreeSlots() {
-      if (Math.random() < 0.2) {
-        const pattern = SPAWN_PATTERNS[Math.floor(Math.random() * SPAWN_PATTERNS.length)];
-        pattern.forEach((i, idx) => {
-          if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-            scheduleSpawn(i, 200 + idx * 180);
-          }
-        });
-        return;
-      }
-      const free = [];
-      for (let i = 0; i < HOLE_COUNT; i += 1) {
-        if (!holeActive[i] && !holeTimers[i].spawnTimer) free.push(i);
-      }
-      const need = Math.max(0, MAX_ACTIVE - activeCount());
-      shuffle(free).slice(0, need).forEach(i => {
-        scheduleSpawn(i, 300 + Math.random() * 600);
-      });
-    }
+  cells.forEach(cell => {
+    cell.classList.remove('up');
+  });
+}
 
-    function hideMole(i) {
-      if (paused) return;
-      const timers = holeTimers[i];
-      clearTimeout(timers.hideTimer);
-      timers.hideTimer = null;
-      holeActive[i] = false;
-      holeBonusType[i] = 'none';
-      const cell = cells[i];
-      cell.classList.remove('up');
-      const moleImg = cell.querySelector('.mole-img');
-      moleImg.src = ASSETS.idle;
-      const plus = cell.querySelector('.fx-score');
-      if (plus) {
-        setTimeout(() => {
-          plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-          plus.dataset.mode = '';
-        }, 560);
-      }
-    }
+function spawnMole(i) {
+  if (!running || paused) return;
 
-    function scheduleSpawn(i, delay = 900 + Math.random() * 700) {
-      if (paused) return;
-      const timers = holeTimers[i];
-      clearTimeout(timers.spawnTimer);
-      timers.spawnTimer = setTimeout(() => spawnMole(i), delay);
-    }
+  const cell = cells[i];
+  if (cell.classList.contains('up')) return;
 
-    function spawnMole(i) {
-      if (!running || paused) return;
-      const timers = holeTimers[i];
-      timers.spawnTimer = null;
-      const cell = cells[i];
-      if (cell.classList.contains('up')) return;
-      if (activeCount() >= MAX_ACTIVE) {
-        scheduleSpawn(i, 900 + Math.random() * 600);
-        return;
-      }
+  cell.classList.add('up');
+  holeActive[i] = true;
 
-      const roll = Math.random();
-      let bonus = 'none';
-      if (roll < BONUS_TIMER_CHANCE) {
-        bonus = 'timer';
-      } else if (roll < BONUS_TIMER_CHANCE + BONUS_SUPER_CHANCE) {
-        bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
-      }
-      holeBonusType[i] = bonus;
+  const visibleFor = 900 + Math.random() * 400;
 
-      const moleImg = cell.querySelector('.mole-img');
-      if (bonus === 'timer') moleImg.src = ASSETS.time;
-      else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
-      else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
-      else moleImg.src = randomMoleSrc();
+  holeTimers[i].hideTimer = setTimeout(() => {
+    hideMole(i);
+    scheduleSpawn(i);
+  }, visibleFor);
+}
 
-      cell.classList.add('up');
-      holeActive[i] = true;
+function hideMole(i) {
+  const cell = cells[i];
+  cell.classList.remove('up');
+  holeActive[i] = false;
+}
 
-      const visibleFor = Math.max(900, holeSpeed[i] + Math.random() * 300);
-      timers.hideTimer = setTimeout(() => {
-        hideMole(i);
-        scheduleSpawn(i);
-      }, visibleFor);
-    }
+function scheduleSpawn(i, delay = 800 + Math.random() * 600) {
+  holeTimers[i].spawnTimer = setTimeout(() => spawnMole(i), delay);
+}
 
-    function registerMiss() {
-      if (!allowInput || paused) return;
-      allowInput = false;
-      setTimeout(() => {
-        allowInput = true;
-      }, 200);
-      combo = 0;
-    }
+function startGame() {
+  resetGame();
+  running = true;
+  paused = false;
 
-    function startCountdown(callback, useBlur = false, cancelable = false) {
-      if (countingDown || running) return;
-      countingDown = true;
-      allowCountdownCancel = cancelable;
-      countdownCancelArmed = false;
-      if (allowCountdownCancel) setTimeout(() => countdownCancelArmed = true, 60);
-      if (useBlur) appEl.classList.add('counting');
-      let n = 3;
-      countdownEl.classList.remove('hidden');
-      countdownEl.textContent = n;
-      countdownTimer = setInterval(() => {
-        n--;
-        if (n > 0) {
-          countdownEl.textContent = n;
-        } else if (n === 0) {
-          countdownEl.textContent = 'GO!';
-        } else {
-          clearInterval(countdownTimer);
-          countdownTimer = null;
-          countdownEl.classList.add('hidden');
-          countingDown = false;
-          allowCountdownCancel = false;
-          countdownCancelArmed = false;
-          appEl.classList.remove('counting');
-          callback();
-        }
-      }, 600);
-    }
+  setScreen(gameScreen);
 
-    function cancelCountdown() {
-      if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
+  for (let i = 0; i < HOLE_COUNT; i++) {
+    scheduleSpawn(i, i * 120);
+  }
+
+  timerInterval = setInterval(() => {
+    if (paused) return;
+
+    timeLeft--;
+    timeValue.textContent = `${timeLeft}초`;
+
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function endGame() {
+  running = false;
+
+  clearInterval(timerInterval);
+
+  holeTimers.forEach(t => {
+    clearTimeout(t.spawnTimer);
+    clearTimeout(t.hideTimer);
+  });
+
+  finalScore.textContent = score;
+  setScreen(gameOverScreen);
+}
+
+function hitMole(i) {
+  if (countingDown || !running || paused || !allowInput) return;
+
+  if (!holeActive[i]) return;
+
+  const now = Date.now();
+
+  if (now - lastHitAt > 500) combo = 0;
+  combo++;
+
+  score += combo >= 2 ? 2 : 1;
+
+  scoreValue.textContent = score;
+  lastHitAt = now;
+
+  hideMole(i);
+}
+
+function startCountdown(callback, blur = false, cancelable = false) {
+  if (countingDown) return;
+
+  countingDown = true;
+  allowCountdownCancel = cancelable;
+  countdownCancelArmed = false;
+
+  setTimeout(() => countdownCancelArmed = true, 60);
+
+  let n = 3;
+  countdownEl.classList.remove('hidden');
+  countdownEl.textContent = n;
+
+  countdownTimer = setInterval(() => {
+    n--;
+
+    if (n > 0) countdownEl.textContent = n;
+    else if (n === 0) countdownEl.textContent = 'GO!';
+    else {
       clearInterval(countdownTimer);
-      countdownTimer = null;
-      countingDown = false;
-      allowCountdownCancel = false;
-      countdownCancelArmed = false;
-      countdownEl.classList.add('hidden');
-      appEl.classList.remove('counting');
-    }
-
-    function hitMole(index) {
-      if (!running || paused || !allowInput) return;
-      const now = Date.now();
-      if (now < macroBlockUntil) return;
-      clickTimes.push(now);
-      while (clickTimes.length && clickTimes[0] < now - 1000) clickTimes.shift();
-      if (clickTimes.length > 1) {
-        const intervals = [];
-        for (let i = 1; i < clickTimes.length; i += 1) {
-          intervals.push(clickTimes[i] - clickTimes[i - 1]);
-        }
-        const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-        const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
-        const std = Math.sqrt(variance);
-        const fastCps = clickTimes.length > MACRO_CPS_LIMIT;
-        const suspiciousPattern = mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD;
-        if (fastCps || suspiciousPattern) {
-          macroBlockUntil = now + 1500; // 1.5초 동안 점수 무효
-          registerMiss();
-          return;
-        }
-      }
-      const cell = cells[index];
-      if (!holeActive[index] || !cell.classList.contains('up')) {
-        registerMiss();
-        return;
-      }
-
-      const timers = holeTimers[index];
-      clearTimeout(timers.hideTimer);
-      timers.hideTimer = null;
-
-      const moleImg = cell.querySelector('.mole-img');
-      const pop = cell.querySelector('.fx-pop');
-      const plus = cell.querySelector('.fx-score');
-      let plusImg = plus.querySelector('img');
-      let label = plus.querySelector('.bonus-label');
-      const isBonusTimer = holeBonusType[index] === 'timer';
-      const isBonusSuperPlus = holeBonusType[index] === 'superPlus';
-      const isBonusSuperMinus = holeBonusType[index] === 'superMinus';
-
-      holeActive[index] = false;
-      if (now - lastHitAt > 500) combo = 0; // 0.5초 이상이면 콤보 리셋
-      combo = Math.min(combo + 1, 5);
-      if (isBonusSuperPlus) {
-        moleImg.src = ASSETS.thx;
-      } else if (isBonusSuperMinus) {
-        moleImg.src = ASSETS.yx;
-      } else {
-        moleImg.src = ASSETS.hit;
-      }
-      pop.classList.remove('show');
-      plus.classList.remove('show');
-      void pop.offsetWidth;
-      void plus.offsetWidth;
-      if (!isBonusTimer) {
-        pop.classList.add('show');
-      }
-      if (isBonusTimer) {
-        const bonusSpan = document.createElement('span');
-        bonusSpan.className = 'bonus-label bonus-timer';
-        bonusSpan.textContent = '+3s';
-        plus.replaceChildren(bonusSpan);
-        plus.dataset.mode = 'timer';
-        plusImg = null;
-        label = bonusSpan;
-      } else if (isBonusSuperPlus) {
-        pop.querySelector('img').src = ASSETS.fire3;
-        if (label) label.style.display = 'none';
-        plus.replaceChildren();
-        const img = document.createElement('img');
-        img.src = ASSETS.plus5;
-        img.alt = '+5';
-        plus.appendChild(img);
-        plusImg = img;
-        plus.dataset.mode = 'superPlus';
-        combo = 0;
-      } else if (isBonusSuperMinus) {
-        pop.querySelector('img').src = ASSETS.fire3;
-        if (label) label.style.display = 'none';
-        plus.replaceChildren();
-        const img = document.createElement('img');
-        img.src = ASSETS.minus5;
-        img.alt = '-5';
-        plus.appendChild(img);
-        plusImg = img;
-        plus.dataset.mode = 'superMinus';
-        combo = 0;
-      } else if (combo >= 2) {
-        pop.querySelector('img').src = ASSETS.fire2;
-        if (label) label.style.display = 'none';
-        if (plusImg) {
-          plusImg.style.display = 'block';
-          plusImg.src = ASSETS.plus2;
-        }
-        plus.dataset.mode = 'combo';
-      } else {
-        pop.querySelector('img').src = ASSETS.fire;
-        if (label) label.style.display = 'none';
-        if (plusImg) {
-          plusImg.style.display = 'block';
-          plusImg.src = ASSETS.plus;
-        }
-        plus.dataset.mode = 'normal';
-      }
-      plus.classList.add('show');
-
-      const isCombo = combo >= 2;
-      const addedScore = isBonusTimer ? 0
-                        : isBonusSuperPlus ? 5
-                        : isBonusSuperMinus ? -5
-                        : (isCombo ? 2 : 1);
-      score += addedScore;
-      scoreValue.textContent = score;
-      lastHitAt = now;
-      if (isBonusTimer) {
-        timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
-        timeValue.textContent = `${timeLeft}초`;
-        if (progressFill) progressFill.style.width = `${(timeLeft / GAME_TIME) * 100}%`;
-        combo = 0;
-      } else if (isBonusSuperPlus || isBonusSuperMinus) {
-        combo = 0;
-      } else if (isCombo) {
-        combo = 0; // 보너스 직후 콤보 초기화해 긴장감 유지
-      }
-
-      if (vibrateOn && navigator.vibrate) {
-        navigator.vibrate(isCombo ? [8, 20, 12] : 12);
-      }
-
-      setTimeout(() => {
-        hideMole(index);
-        scheduleSpawn(index, 120);
-      }, 220);
-    }
-
-    function startGame() {
-      resetGame();
-      running = true;
-      paused = false;
-      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-      setScreen(gameScreen);
-      const order = shuffle([...Array(HOLE_COUNT).keys()]);
-      order.slice(0, MAX_ACTIVE).forEach((i, idx) => {
-        scheduleSpawn(i, 200 + idx * 120);
-      });
-      order.slice(MAX_ACTIVE).forEach((i, idx) => {
-        const base = 1000 + Math.random() * 800;
-        scheduleSpawn(i, base + idx * 140);
-      });
-      spawnWatchInterval = setInterval(() => {
-        if (!running) return;
-        scheduleFreeSlots();
-      }, 1100);
-
-      timerInterval = setInterval(() => {
-        timeLeft -= 1;
-        timeValue.textContent = `${timeLeft}초`;
-        const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
-        if (progressFill) progressFill.style.width = `${pct * 100}%`;
-        if (timeLeft <= 0) {
-          endGame();
-        }
-      }, 1000);
-    }
-
-    function endGame() {
-      running = false;
-      clearInterval(timerInterval);
-      clearInterval(spawnWatchInterval);
-      holeTimers.forEach(t => {
-        clearTimeout(t.spawnTimer);
-        clearTimeout(t.hideTimer);
-        t.spawnTimer = null;
-        t.hideTimer = null;
-      });
-      cells.forEach((_, i) => hideMole(i));
-      finalScore.textContent = score;
-      pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-      setScreen(gameOverScreen);
-    }
-
-    startBtn.addEventListener('pointerdown', () => {
-      if (running || countingDown) return;
-      startCountdown(startGame, false);
-    });
-
-    restartBtn.addEventListener('pointerdown', () => {
-      if (running || countingDown) return;
-      startCountdown(startGame, true, true);
-    });
-
-    restartSmallBtn.addEventListener('pointerdown', () => {
-      if (countingDown) return;
-      if (running) endGame();
-      startCountdown(startGame, true, true);
-    });
-
-    vibeBtn.addEventListener('pointerdown', () => {
-      vibrateOn = !vibrateOn;
-      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-    });
-
-    pauseBtn.addEventListener('pointerdown', () => {
-      if (!running || countingDown) return;
-      paused = !paused;
-      if (paused) {
-        appEl.classList.add('paused');
-        allowInput = false;
-        clearInterval(timerInterval);
-        clearInterval(spawnWatchInterval);
-        pauseBtn.style.backgroundImage = "url('assets/ja.png')";
-        holeTimers.forEach(t => {
-          clearTimeout(t.spawnTimer);
-          clearTimeout(t.hideTimer);
-          t.spawnTimer = null;
-          t.hideTimer = null;
-        });
-      } else {
-        appEl.classList.remove('paused');
-        pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-        allowInput = true;
-        spawnWatchInterval = setInterval(() => {
-          if (!running || paused) return;
-          scheduleFreeSlots();
-        }, 1100);
-        timerInterval = setInterval(() => {
-          if (paused) return;
-          timeLeft -= 1;
-          timeValue.textContent = `${timeLeft}초`;
-          const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
-          if (progressFill) progressFill.style.width = `${pct * 100}%`;
-          if (timeLeft <= 0) {
-            endGame();
-          }
-        }, 1000);
-        // restart hides for visible moles
-        cells.forEach((cell, i) => {
-          if (holeActive[i] && !holeTimers[i].hideTimer) {
-            holeTimers[i].hideTimer = setTimeout(() => {
-              hideMole(i);
-              scheduleSpawn(i);
-            }, 700);
-          } else if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-            scheduleSpawn(i, 500);
-          }
-        });
-      }
-    });
-
-    function bindPress(el) {
-      if (!el) return;
-      el.addEventListener('pointerdown', () => {
-        el.classList.add('pressed');
-        el.classList.remove('released');
-      });
-      const release = () => {
-        el.classList.remove('pressed');
-        el.classList.add('released');
-        setTimeout(() => el.classList.remove('released'), 180);
-      };
-      el.addEventListener('pointerup', release);
-      el.addEventListener('pointerleave', () => el.classList.remove('pressed'));
-    }
-
-    [startBtn, restartBtn, pauseBtn, restartSmallBtn, vibeBtn].forEach(bindPress);
-
-    function cancelCountdown() {
-      if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
-      if (countdownTimer) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
-      }
       countdownEl.classList.add('hidden');
       countingDown = false;
-      allowCountdownCancel = false;
-      countdownCancelArmed = false;
-      appEl.classList.remove('counting');
+      callback();
     }
+  }, 600);
+}
 
-    countdownEl.addEventListener('pointerdown', (e) => {
-      cancelCountdown();
-      if (!countingDown) e.stopPropagation();
-    });
-    // Any tap on screen cancels restart countdown (mobile 포함)
-    ['pointerdown', 'touchstart', 'mousedown'].forEach(evt => {
-      appEl.addEventListener(evt, () => cancelCountdown(), { capture: true });
-    });
+function cancelCountdown() {
+  if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
 
-    createBoard();
-  </script>
+  clearInterval(countdownTimer);
+  countdownEl.classList.add('hidden');
+
+  countingDown = false;
+  allowCountdownCancel = false;
+  countdownCancelArmed = false;
+
+  running = false;
+  paused = false;
+}
+
+// ⭐ 핵심: 이벤트 충돌 방지
+appEl.addEventListener('pointerdown', (e) => {
+  if (!countingDown) return;
+
+  cancelCountdown();
+
+  e.stopPropagation();
+  e.preventDefault();
+}, { capture: true });
+
+// 버튼들
+startBtn.addEventListener('pointerdown', () => {
+  if (countingDown) return;
+  startCountdown(startGame);
+});
+
+restartBtn.addEventListener('pointerdown', () => {
+  if (countingDown) return;
+  startCountdown(startGame, true, true);
+});
+
+restartSmallBtn.addEventListener('pointerdown', () => {
+  if (countingDown) return;
+  if (running) endGame();
+  startCountdown(startGame, true, true);
+});
+
+pauseBtn.addEventListener('pointerdown', () => {
+  if (countingDown) return;
+  if (!running) return;
+
+  paused = !paused;
+});
+
+vibeBtn.addEventListener('pointerdown', () => {
+  vibrateOn = !vibrateOn;
+});
+
+createBoard();
+</script>
+
+
+  
 </body>
 </html>
