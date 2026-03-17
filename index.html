@@ -131,7 +131,7 @@
     .hud-timeicon img {
       transform: translateY(4px);
     }
-    .hud-timeicon strong {ㄱ
+    .hud-timeicon strong {
       transform: translate(-50%, -50%) translateY(4px) !important;
     }
     .hud-score {
@@ -1340,9 +1340,15 @@
       if (!countingDown) e.stopPropagation();
     });
     // Any tap on screen cancels restart countdown (mobile 포함)
-    ['pointerdown', 'touchstart', 'mousedown'].forEach(evt => {
-      appEl.addEventListener(evt, () => cancelCountdown(), { capture: true });
-    });
+ appEl.addEventListener('pointerdown', (e) => {
+  if (!countingDown) return;
+
+  // 버튼 누른건 정상 동작 허용
+  const isButton = e.target.closest('button');
+  if (isButton) return;
+
+  cancelCountdown();
+});
 
     createBoard();
   </script>
