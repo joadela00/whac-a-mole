@@ -1244,38 +1244,39 @@
       vibrateOn = !vibrateOn;
       vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
     });
+pauseBtn.addEventListener('pointerdown', () => {
+  if (!running || countingDown) return;
 
-    pauseBtn.addEventListener('pointerdown', () => {
-      if (!running || countingDown) return;
-      paused = !paused;
-      if (paused) {
-        appEl.classList.add('paused');
-        allowInput = false;
-        clearInterval(timerInterval);
-        clearInterval(spawnWatchInterval);
-        pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-            });
-      } else {
-        appEl.classList.remove('paused');
-        pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-        allowInput = true;
-        spawnWatchInterval = setInterval(() => {
-          if (!running || paused) return;
-          scheduleFreeSlots();
-        }, 1100);
-        timerInterval = setInterval(() => {
-          if (paused) return;
-          timeLeft -= 1;
-          timeValue.textContent = `${timeLeft}초`;
-             if (timeLeft <= 0) {
-            endGame();
-          }
-        }, 1000);
-        // restart hides for visible moles
-        cells.forEach((cell, i) => {
-             }
-    });
+  paused = !paused;
 
+  if (paused) {
+    appEl.classList.add('paused');
+    allowInput = false;
+    clearInterval(timerInterval);
+    clearInterval(spawnWatchInterval);
+    pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+  } else {
+    appEl.classList.remove('paused');
+    pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+    allowInput = true;
+
+    spawnWatchInterval = setInterval(() => {
+      if (!running || paused) return;
+      scheduleFreeSlots();
+    }, 1100);
+
+    timerInterval = setInterval(() => {
+      if (paused) return;
+
+      timeLeft -= 1;
+      timeValue.textContent = `${timeLeft}초`;
+
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+});
     function bindPress(el) {
       if (!el) return;
       el.addEventListener('pointerdown', () => {
