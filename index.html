@@ -395,14 +395,6 @@
         0 2px 10px rgba(0,160,255,0.35);
     }
 
-    .progressFill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #6fd94d 0%, #f6c63b 65%, #ff8a3c 100%);
-      opacity: 0.9;
-      transition: width 160ms linear, filter 160ms linear;
-    }
-
     .board {
       width: var(--board-size);
       height: var(--board-size);
@@ -764,7 +756,6 @@
     const scoreValue = document.getElementById('scoreValue');
     const timeValue = document.getElementById('timeValue');
     const finalScore = document.getElementById('finalScore');
-    const progressFill = document.getElementById('progressFill');
     const countdownEl = document.getElementById('countdown');
 
     if (vibeBtn && isiOS) {
@@ -869,8 +860,7 @@
       combo = 0;
       scoreValue.textContent = score;
       timeValue.textContent = `${timeLeft}초`;
-      if (progressFill) progressFill.style.width = '100%';
-      clearInterval(timerInterval);
+         clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
       holeTimers.forEach(t => {
         clearTimeout(t.spawnTimer);
@@ -1173,8 +1163,7 @@
       if (isBonusTimer) {
         timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
         timeValue.textContent = `${timeLeft}초`;
-        if (progressFill) progressFill.style.width = `${(timeLeft / GAME_TIME) * 100}%`;
-        combo = 0;
+         combo = 0;
       } else if (isBonusSuperPlus || isBonusSuperMinus) {
         combo = 0;
       } else if (isCombo) {
@@ -1213,8 +1202,6 @@
       timerInterval = setInterval(() => {
         timeLeft -= 1;
         timeValue.textContent = `${timeLeft}초`;
-        const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
-        if (progressFill) progressFill.style.width = `${pct * 100}%`;
         if (timeLeft <= 0) {
           endGame();
         }
@@ -1266,7 +1253,7 @@
         allowInput = false;
         clearInterval(timerInterval);
         clearInterval(spawnWatchInterval);
-        pauseBtn.style.backgroundImage = "url('assets/ja.png')";
+        pauseBtn.style.backgroundImage = "url('assets/pa.png')";
         holeTimers.forEach(t => {
           clearTimeout(t.spawnTimer);
           clearTimeout(t.hideTimer);
@@ -1286,8 +1273,7 @@
           timeLeft -= 1;
           timeValue.textContent = `${timeLeft}초`;
           const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
-          if (progressFill) progressFill.style.width = `${pct * 100}%`;
-          if (timeLeft <= 0) {
+             if (timeLeft <= 0) {
             endGame();
           }
         }, 1000);
