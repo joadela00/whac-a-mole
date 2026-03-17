@@ -1315,26 +1315,14 @@
         el.classList.remove('pressed');
         el.classList.add('released');
         setTimeout(() => el.classList.remove('released'), 180);
-      };
+         };
       el.addEventListener('pointerup', release);
       el.addEventListener('pointerleave', () => el.classList.remove('pressed'));
     }
 
     [startBtn, restartBtn, pauseBtn, restartSmallBtn, vibeBtn].forEach(bindPress);
 
-    function cancelCountdown() {
-      if (!countingDown || !allowCountdownCancel || !countdownCancelArmed) return;
-      if (countdownTimer) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
-      }
-      countdownEl.classList.add('hidden');
-      countingDown = false;
-      allowCountdownCancel = false;
-      countdownCancelArmed = false;
-      appEl.classList.remove('counting');
-    }
-
+ 
     countdownEl.addEventListener('pointerdown', (e) => {
       cancelCountdown();
       if (!countingDown) e.stopPropagation();
