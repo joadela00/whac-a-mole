@@ -749,6 +749,7 @@
     </section>
   </div>
 
+
 <script>
 const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const appEl = document.querySelector('.app');
@@ -771,32 +772,10 @@ if (vibeBtn && isiOS) vibeBtn.style.display = 'none';
 const GAME_TIME = 30;
 const HOLE_COUNT = 9;
 const MAX_ACTIVE = 3;
-const BONUS_TIMER_CHANCE = 0.015;
-const BONUS_SUPER_CHANCE = 0.08;
-const SUPER_MINUS_RATIO = 0.5;
-const BONUS_TIME_ADD = 3;
 
 const ASSETS = {
   hole: 'assets/hole.png',
   idle: 'assets/char_idle.png',
-  blink: 'assets/char_blink.png',
-  hand: 'assets/char_hand.png',
-  whand: 'assets/char_whand.png',
-  time: 'assets/char_time.png',
-  y: 'assets/char_y.png',
-  th: 'assets/char_th.png',
-  thx: 'assets/char_thx.png',
-  hit: 'assets/char_hit.png',
-  yx: 'assets/char_yx.png',
-  fire: 'assets/effect_fire.png',
-  fire2: 'assets/effect_fire2.png',
-  fire3: 'assets/effect_fire3.png',
-  plus: 'assets/score_plus.png',
-  plus2: 'assets/score_plus2.png',
-  plus5: 'assets/score_plus5.png',
-  minus5: 'assets/score_minus5.png',
-  rr: 'assets/rr.png',
-  rrx: 'assets/rrx.png',
 };
 
 let score = 0;
@@ -810,17 +789,9 @@ let countdownCancelArmed = false;
 let countdownTimer = null;
 
 let timerInterval = null;
-let spawnWatchInterval = null;
-
 const cells = [];
 const holeActive = Array(HOLE_COUNT).fill(false);
-const holeBonusType = Array(HOLE_COUNT).fill('none');
 const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
-
-let combo = 0;
-let lastHitAt = 0;
-let allowInput = true;
-let vibrateOn = false;
 
 function createBoard() {
   board.innerHTML = '';
@@ -831,9 +802,7 @@ function createBoard() {
     cell.className = 'cell';
     cell.innerHTML = `
       <div class="hole"><img src="${ASSETS.hole}"></div>
-      <div class="mole"><img class="mole-img" src="${ASSETS.idle}"></div>
-      <div class="fx-pop"><img src="${ASSETS.fire}"></div>
-      <div class="fx-score"><img src="${ASSETS.plus}"></div>
+      <div class="mole"><img src="${ASSETS.idle}"></div>
     `;
     cell.addEventListener('pointerdown', () => hitMole(i));
     board.appendChild(cell);
@@ -849,23 +818,17 @@ function setScreen(s) {
 function resetGame() {
   score = 0;
   timeLeft = GAME_TIME;
-  combo = 0;
   scoreValue.textContent = score;
   timeValue.textContent = `${timeLeft}초`;
 
   holeActive.fill(false);
-  holeBonusType.fill('none');
 
   holeTimers.forEach(t => {
     clearTimeout(t.spawnTimer);
     clearTimeout(t.hideTimer);
-    t.spawnTimer = null;
-    t.hideTimer = null;
   });
 
-  cells.forEach(cell => {
-    cell.classList.remove('up');
-  });
+  cells.forEach(cell => cell.classList.remove('up'));
 }
 
 function spawnMole(i) {
@@ -877,12 +840,10 @@ function spawnMole(i) {
   cell.classList.add('up');
   holeActive[i] = true;
 
-  const visibleFor = 900 + Math.random() * 400;
-
   holeTimers[i].hideTimer = setTimeout(() => {
     hideMole(i);
     scheduleSpawn(i);
-  }, visibleFor);
+  }, 800 + Math.random() * 500);
 }
 
 function hideMole(i) {
@@ -918,7 +879,6 @@ function startGame() {
 
 function endGame() {
   running = false;
-
   clearInterval(timerInterval);
 
   holeTimers.forEach(t => {
@@ -931,19 +891,11 @@ function endGame() {
 }
 
 function hitMole(i) {
-  if (countingDown || !running || paused || !allowInput) return;
-
+  if (countingDown || !running || paused) return;
   if (!holeActive[i]) return;
 
-  const now = Date.now();
-
-  if (now - lastHitAt > 500) combo = 0;
-  combo++;
-
-  score += combo >= 2 ? 2 : 1;
-
+  score++;
   scoreValue.textContent = score;
-  lastHitAt = now;
 
   hideMole(i);
 }
@@ -989,17 +941,16 @@ function cancelCountdown() {
   paused = false;
 }
 
-// ⭐ 핵심: 이벤트 충돌 방지
+// ⭐ 핵심 FIX (버튼 안막고 배경만 취소)
 appEl.addEventListener('pointerdown', (e) => {
   if (!countingDown) return;
 
+  const isButton = e.target.closest('button');
+  if (isButton) return;
+
   cancelCountdown();
+});
 
-  e.stopPropagation();
-  e.preventDefault();
-}, { capture: true });
-
-// 버튼들
 startBtn.addEventListener('pointerdown', () => {
   if (countingDown) return;
   startCountdown(startGame);
@@ -1023,13 +974,10 @@ pauseBtn.addEventListener('pointerdown', () => {
   paused = !paused;
 });
 
-vibeBtn.addEventListener('pointerdown', () => {
-  vibrateOn = !vibrateOn;
-});
-
 createBoard();
 </script>
 
+  
 
   
 </body>
