@@ -1254,12 +1254,7 @@
         clearInterval(timerInterval);
         clearInterval(spawnWatchInterval);
         pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-        holeTimers.forEach(t => {
-          clearTimeout(t.spawnTimer);
-          clearTimeout(t.hideTimer);
-          t.spawnTimer = null;
-          t.hideTimer = null;
-        });
+            });
       } else {
         appEl.classList.remove('paused');
         pauseBtn.style.backgroundImage = "url('assets/pa.png')";
@@ -1272,23 +1267,13 @@
           if (paused) return;
           timeLeft -= 1;
           timeValue.textContent = `${timeLeft}초`;
-          const pct = Math.max(0, Math.min(1, timeLeft / GAME_TIME));
              if (timeLeft <= 0) {
             endGame();
           }
         }, 1000);
         // restart hides for visible moles
         cells.forEach((cell, i) => {
-          if (holeActive[i] && !holeTimers[i].hideTimer) {
-            holeTimers[i].hideTimer = setTimeout(() => {
-              hideMole(i);
-              scheduleSpawn(i);
-            }, 700);
-          } else if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-            scheduleSpawn(i, 500);
-          }
-        });
-      }
+             }
     });
 
     function bindPress(el) {
