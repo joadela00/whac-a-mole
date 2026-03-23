@@ -1208,14 +1208,6 @@ const mysteryReward = isBonusMystery ? resolveMysteryReward() : null;
   }
 }
 
-
-      
-        bonusSpan.className = 'bonus-label bonus-timer';
-        bonusSpan.textContent = '+3s';
-        plus.replaceChildren(bonusSpan);
-        plus.dataset.mode = 'timer';
-        plusImg = null;
-        label = bonusSpan;
       } else if (isBonusSuperPlus) {
         pop.querySelector('img').src = ASSETS.fire3;
         if (label) label.style.display = 'none';
