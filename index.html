@@ -114,7 +114,6 @@
     /* Blur active screen during countdown (restart only) */
     .app.counting .screen.active {
       filter: blur(2px);
-      pointer-events: none;
     }
 
     .start-screen,
@@ -1029,6 +1028,7 @@
           allowCountdownCancel = false;
           countdownCancelArmed = false;
           appEl.classList.remove('counting');
+          allowInput = true;
           callback();
         }
       }, 600);
