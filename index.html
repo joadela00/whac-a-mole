@@ -1258,17 +1258,21 @@ const mysteryReward = isBonusMystery ? resolveMysteryReward() : null;
       score += addedScore;
       scoreValue.textContent = score;
       lastHitAt = now;
-      if (isBonusTimer) {
-        timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
-        } else if (isBonusMystery) {
+
+    if (isBonusTimer) {
+  timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
+  timeValue.textContent = `${timeLeft}초`;
+  combo = 0;
+
+} else if (isBonusMystery) {
   if (mysteryReward.timeDelta) {
     timeLeft = Math.min(GAME_TIME, timeLeft + mysteryReward.timeDelta);
     timeValue.textContent = `${timeLeft}초`;
   }
   combo = 0;
-        timeValue.textContent = `${timeLeft}초`;
-         combo = 0;
-      } else if (isBonusSuperPlus || isBonusSuperMinus) {
+}    
+    
+    else if (isBonusSuperPlus || isBonusSuperMinus) {
         combo = 0;
       } else if (isCombo) {
         combo = 0; // 보너스 직후 콤보 초기화해 긴장감 유지
