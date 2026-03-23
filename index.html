@@ -917,6 +917,9 @@ function resetGame() {
 
   vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
   preloadAssets();
+
+  mysterySpawnedThisGame = false;
+nonMysterySpawnCount = 0;
 }
 
     function preloadAssets() {
