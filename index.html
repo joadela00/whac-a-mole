@@ -1165,6 +1165,10 @@ function hitMole(index) {
   }
 
   const isCombo = combo >= 2;
+  
+if (isMystery) {
+  cell.classList.remove('up');
+}
 
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
 
