@@ -32,6 +32,7 @@
   <link rel="preload" as="image" href="assets/over.png">
   <link rel="preload" as="image" href="assets/3q.png">
   <link rel="preload" as="image" href="assets/score_plus3.png">
+  <link rel="preload" as="image" href="assets/score_minus3.png">
   <style>
     /* iOS 감지용 */
     :root {
@@ -620,6 +621,18 @@
     .pause-btn { background-image: url('assets/pa.png'); }
     .restart-small { background-image: url('assets/re.png'); }
     .vibe-btn { background-image: url('assets/rrx.png'); display: block; }
+    .cell.mystery-up .mole {
+  filter: drop-shadow(0 0 14px rgba(255, 228, 106, 0.9));
+}
+
+.cell.mystery-up .mole img {
+  animation: mysteryPulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes mysteryPulse {
+  from { transform: translateY(20%) scale(0.94) rotate(-4deg); }
+  to { transform: translateY(12%) scale(1.08) rotate(4deg); }
+}
     @supports (-webkit-touch-callout: none) {
       /* Hide vibration toggle on iOS */
       .vibe-btn { display: none !important; }
@@ -644,17 +657,17 @@
       pointer-events: none;
     }
 
-    .fx-score .bonus-label.bonus-timer {
-      font-size: 32px;
-      color: #82e7ff;
-      text-shadow:
-        1.5px 1.5px 0 #0f5d78,
-        0 0 10px rgba(0, 160, 255, 0.45);
-      background: none;
-      border: none;
-    }
+.fx-score .bonus-label.bonus-timer {
+  font-size: 32px;
+  color: #82e7ff;
+  text-shadow:
+    1.5px 1.5px 0 #0f5d78,
+    0 0 10px rgba(0, 160, 255, 0.45);
+  background: none;
+  border: none;
+}
 
-    .gameover-screen {
+   .gameover-screen {
       background: rgba(0,0,0,.08);
       backdrop-filter: blur(2px);
     }
@@ -703,28 +716,7 @@
         1.5px 1.5px 0 #7b3300,
         0 2px 10px rgba(0,0,0,0.25);
     }
-    .cell.mystery-up .mole {
-  filter: drop-shadow(0 0 14px rgba(255, 228, 106, 0.9));
-    }
 
-    .cell.mystery-up {
-  animation: mysteryGlow 0.8s ease-in-out infinite alternate;
-    }
-
-    .cell.mystery-up .mole img {
-  animation: mysteryPulse 0.7s ease-in-out infinite alternate;
-    }
-
-@keyframes mysteryGlow {
-  from { transform: scale(1); }
-  to   { transform: scale(1.05); }
-    }
-
-@keyframes mysteryPulse {
-  from { transform: translateY(20%) scale(0.94) rotate(-4deg); }
-  to   { transform: translateY(12%) scale(1.08) rotate(4deg); }
-    }
-    
     .hidden { display: none !important; }
   </style>
 </head>
@@ -788,14 +780,11 @@
     const HOLE_COUNT = 9;
     const MAX_ACTIVE = 3;
     const BONUS_TIMER_CHANCE = 0.015;
+    const BONUS_MYSTERY_CHANCE = 0.06;
+const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
-   const BONUS_MYSTERY_CHANCE = 0.06;
-   const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
-
-   let mysterySpawnedThisGame = false;
-   let nonMysterySpawnCount = 0;
-    
+   
     const BONUS_TIME_ADD = 3;
     const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
@@ -829,6 +818,7 @@
       plus2: 'assets/score_plus2.png',
       plus5: 'assets/score_plus5.png',
       minus5: 'assets/score_minus5.png',
+      minus3: 'assets/score_minus3.png',
       rr: 'assets/rr.png',
       rrx: 'assets/rrx.png',
     };
@@ -838,7 +828,7 @@
     const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
     const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 1100 + Math.random() * 600); // 더 느리게
     const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
-    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'superPlus' | 'superMinus'
+    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'mystery' | 'superPlus' | 'superMinus'
     let combo = 0;
     let lastHitAt = 0;
     let allowInput = true;
@@ -853,6 +843,8 @@
     let countdownTimer = null;
     let allowCountdownCancel = false;
     let countdownCancelArmed = false;
+    let mysterySpawnedThisGame = false;
+let nonMysterySpawnCount = 0;
 
     const cells = [];
 
@@ -1027,7 +1019,12 @@ if (shouldForceMystery) {
   bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
 }
 
-
+if (bonus === 'mystery') {
+  mysterySpawnedThisGame = true;
+  nonMysterySpawnCount = 0;
+} else {
+  nonMysterySpawnCount += 1;
+}
       
       holeBonusType[i] = bonus;
 
@@ -1040,12 +1037,7 @@ else moleImg.src = randomMoleSrc();
 
       cell.classList.toggle('mystery-up', bonus === 'mystery');
 cell.classList.add('up');
-if (bonus === 'mystery') {
-  mysterySpawnedThisGame = true;
-  nonMysterySpawnCount = 0;
-} else {
-  nonMysterySpawnCount += 1;
-}
+
       holeActive[i] = true;
 
       const visibleFor = Math.max(900, holeSpeed[i] + Math.random() * 300);
@@ -1106,15 +1098,16 @@ if (bonus === 'mystery') {
       
     }
 
-    function resolveMysteryReward() {
-  const roll = Math.random();
-
-  if (roll < 0.5) return { scoreDelta: 3, timeDelta: 0, imageSrc: ASSETS.plus3 };
-  else if (roll < 0.75) return { scoreDelta: 5, timeDelta: 0, imageSrc: ASSETS.plus5 };
-  else if (roll < 0.9) return { scoreDelta: 0, timeDelta: 3, imageSrc: ASSETS.plus3 };
-  else return { scoreDelta: -3, timeDelta: 0, imageSrc: ASSETS.minus5 };
+function resolveMysteryReward() {
+  const isGoodReward = Math.random() < 0.5;
+  return {
+    scoreDelta: isGoodReward ? 3 : -3,
+    timeDelta: 0,
+    imageSrc: isGoodReward ? ASSETS.plus3 : ASSETS.minus3,
+    imageAlt: isGoodReward ? '+3' : '-3',
+   };
 }
-
+    
 function hitMole(index) {
   if (!running || paused || !allowInput) return;
 
@@ -1190,12 +1183,14 @@ function hitMole(index) {
 
   plus.classList.add('show');
 
-  const add =
-    isTimer ? 0 :
-    isMystery ? reward.scoreDelta :
-    isPlus ? 5 :
-    isMinus ? -5 :
-    (combo>=2?2:1);
+const isCombo = combo >= 2;
+
+const add =
+  isTimer ? 0 :
+  isMystery ? reward.scoreDelta :
+  isPlus ? 5 :
+  isMinus ? -5 :
+  (isCombo ? 2 : 1);
 
   score += add;
   scoreValue.textContent = score;
@@ -1213,9 +1208,9 @@ function hitMole(index) {
 
   combo = 0;
 
-  if (vibrateOn && navigator.vibrate && !isMystery) {
-    navigator.vibrate(combo>=2?[8,20,12]:12);
-  }
+ if (vibrateOn && navigator.vibrate && !isMystery) {
+  navigator.vibrate(isCombo ? [8,20,12] : 12);
+}
 
   setTimeout(()=>{
     hideMole(index);
@@ -1338,10 +1333,6 @@ pauseBtn.addEventListener('pointerdown', () => {
     [startBtn, restartBtn, pauseBtn, restartSmallBtn, vibeBtn].forEach(bindPress);
 
  
-    countdownEl.addEventListener('pointerdown', (e) => {
-      cancelCountdown();
-      if (!countingDown) e.stopPropagation();
-    });
     // Any tap on screen cancels restart countdown (mobile 포함)
  appEl.addEventListener('pointerdown', (e) => {
   if (!countingDown) return;
