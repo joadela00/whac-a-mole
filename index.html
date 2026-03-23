@@ -1161,8 +1161,7 @@ function hitMole(index) {
 
   if (!isTimer && !isMystery) {
     combo = (now - lastHitAt > 500) ? 1 : Math.min(combo + 1, 5);
-  } else {
-    combo = 0;
+  } else {   combo = 0; // 👈 이거 반드시 필요
   }
 
   const isCombo = combo >= 2;
@@ -1287,10 +1286,6 @@ function hitMole(index) {
       vibrateOn = !vibrateOn;
       vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
     });
-pauseBtn.addEventListener('pointerdown', () => {
-  if (!running || countingDown) return;
-
-  paused = !paused;
 
 pauseBtn.addEventListener('pointerdown', () => {
   if (!running || countingDown) return;
@@ -1302,10 +1297,16 @@ pauseBtn.addEventListener('pointerdown', () => {
     allowInput = false;
     clearInterval(timerInterval);
     clearInterval(spawnWatchInterval);
+
+    // 👉 일시정지 상태 → ▶ 버튼
     pauseBtn.style.backgroundImage = "url('assets/ja.png')";
+
   } else {
     appEl.classList.remove('paused');
+
+    // 👉 재생 상태 → || 버튼
     pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+
     allowInput = true;
 
     spawnWatchInterval = setInterval(() => {
@@ -1325,6 +1326,8 @@ pauseBtn.addEventListener('pointerdown', () => {
     }, 1000);
   }
 });
+
+
   
     function bindPress(el) {
       if (!el) return;
