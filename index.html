@@ -1123,11 +1123,14 @@ function hitMole(index) {
       intervals.push(clickTimes[i] - clickTimes[i - 1]);
     }
 
-    const mean = intervals.reduce((a,b)=>a+b,0)/intervals.length;
-    const variance = intervals.reduce((a,b)=>a+(b-mean)**2,0)/intervals.length;
+    const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
     const std = Math.sqrt(variance);
 
-    if (clickTimes.length > MACRO_CPS_LIMIT || (mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD)) {
+    if (
+      clickTimes.length > MACRO_CPS_LIMIT ||
+      (mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD)
+    ) {
       macroBlockUntil = now + 1500;
       registerMiss();
       return;
@@ -1156,7 +1159,13 @@ function hitMole(index) {
 
   holeActive[index] = false;
 
-  combo = (now - lastHitAt > 500) ? 1 : Math.min(combo+1,5);
+  if (!isTimer && !isMystery) {
+    combo = (now - lastHitAt > 500) ? 1 : Math.min(combo + 1, 5);
+  } else {
+    combo = 0;
+  }
+
+  const isCombo = combo >= 2;
 
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
 
@@ -1169,53 +1178,49 @@ function hitMole(index) {
   if (isTimer) {
     plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
   } else if (isMystery) {
-    plus.innerHTML = `<img src="${reward.imageSrc}">`;
-    if (vibrateOn && navigator.vibrate) navigator.vibrate([10,40,10]);
+    plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
+    if (vibrateOn && navigator.vibrate) navigator.vibrate([10, 40, 10]);
   } else if (isPlus) {
-    plus.innerHTML = `<img src="${ASSETS.plus5}">`;
+    plus.innerHTML = `<img src="${ASSETS.plus5}" alt="+5">`;
   } else if (isMinus) {
-    plus.innerHTML = `<img src="${ASSETS.minus5}">`;
-  } else if (combo>=2) {
-    plus.innerHTML = `<img src="${ASSETS.plus2}">`;
+    plus.innerHTML = `<img src="${ASSETS.minus5}" alt="-5">`;
+  } else if (isCombo) {
+    plus.innerHTML = `<img src="${ASSETS.plus2}" alt="+2">`;
   } else {
-    plus.innerHTML = `<img src="${ASSETS.plus}">`;
+    plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
   }
 
   plus.classList.add('show');
 
-const isCombo = combo >= 2;
-
-const add =
-  isTimer ? 0 :
-  isMystery ? reward.scoreDelta :
-  isPlus ? 5 :
-  isMinus ? -5 :
-  (isCombo ? 2 : 1);
+  const add =
+    isTimer ? 0 :
+    isMystery ? reward.scoreDelta :
+    isPlus ? 5 :
+    isMinus ? -5 :
+    (isCombo ? 2 : 1);
 
   score += add;
   scoreValue.textContent = score;
   lastHitAt = now;
 
   if (isTimer) {
-    timeLeft = Math.min(GAME_TIME, timeLeft+BONUS_TIME_ADD);
+    timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
     timeValue.textContent = `${timeLeft}초`;
   }
 
   if (isMystery && reward.timeDelta) {
-    timeLeft = Math.min(GAME_TIME, timeLeft+reward.timeDelta);
+    timeLeft = Math.min(GAME_TIME, timeLeft + reward.timeDelta);
     timeValue.textContent = `${timeLeft}초`;
   }
 
-  combo = 0;
+  if (vibrateOn && navigator.vibrate && !isMystery) {
+    navigator.vibrate(isCombo ? [8, 20, 12] : 12);
+  }
 
- if (vibrateOn && navigator.vibrate && !isMystery) {
-  navigator.vibrate(isCombo ? [8,20,12] : 12);
-}
-
-  setTimeout(()=>{
+  setTimeout(() => {
     hideMole(index);
-    scheduleSpawn(index,120);
-  },220);
+    scheduleSpawn(index, 120);
+  }, 220);
 }
 
     function startGame() {
@@ -1287,12 +1292,17 @@ pauseBtn.addEventListener('pointerdown', () => {
 
   paused = !paused;
 
+pauseBtn.addEventListener('pointerdown', () => {
+  if (!running || countingDown) return;
+
+  paused = !paused;
+
   if (paused) {
     appEl.classList.add('paused');
     allowInput = false;
     clearInterval(timerInterval);
     clearInterval(spawnWatchInterval);
-    pauseBtn.style.backgroundImage = "url('assets/pa.png')";
+    pauseBtn.style.backgroundImage = "url('assets/ja.png')";
   } else {
     appEl.classList.remove('paused');
     pauseBtn.style.backgroundImage = "url('assets/pa.png')";
@@ -1315,6 +1325,7 @@ pauseBtn.addEventListener('pointerdown', () => {
     }, 1000);
   }
 });
+  
     function bindPress(el) {
       if (!el) return;
       el.addEventListener('pointerdown', () => {
