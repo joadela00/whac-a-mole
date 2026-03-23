@@ -30,6 +30,8 @@
   <link rel="preload" as="image" href="assets/score_minus5.png">
   <link rel="preload" as="image" href="assets/fi_scor.png">
   <link rel="preload" as="image" href="assets/over.png">
+  <link rel="preload" as="image" href="assets/3q.png">
+  <link rel="preload" as="image" href="assets/score_plus3.png">
   <style>
     /* iOS 감지용 */
     :root {
@@ -701,7 +703,28 @@
         1.5px 1.5px 0 #7b3300,
         0 2px 10px rgba(0,0,0,0.25);
     }
+    .cell.mystery-up .mole {
+  filter: drop-shadow(0 0 14px rgba(255, 228, 106, 0.9));
+    }
 
+    .cell.mystery-up {
+  animation: mysteryGlow 0.8s ease-in-out infinite alternate;
+    }
+
+    .cell.mystery-up .mole img {
+  animation: mysteryPulse 0.7s ease-in-out infinite alternate;
+    }
+
+@keyframes mysteryGlow {
+  from { transform: scale(1); }
+  to   { transform: scale(1.05); }
+    }
+
+@keyframes mysteryPulse {
+  from { transform: translateY(20%) scale(0.94) rotate(-4deg); }
+  to   { transform: translateY(12%) scale(1.08) rotate(4deg); }
+    }
+    
     .hidden { display: none !important; }
   </style>
 </head>
@@ -767,6 +790,12 @@
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
+   const BONUS_MYSTERY_CHANCE = 0.06;
+   const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
+
+   let mysterySpawnedThisGame = false;
+   let nonMysterySpawnCount = 0;
+    
     const BONUS_TIME_ADD = 3;
     const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
@@ -786,6 +815,8 @@
       hand: 'assets/char_hand.png',
       whand: 'assets/char_whand.png',
       time: 'assets/char_time.png',
+      mystery: 'assets/3q.png',
+      plus3: 'assets/score_plus3.png',
       y: 'assets/char_y.png',
       th: 'assets/char_th.png',
       thx: 'assets/char_thx.png',
@@ -853,33 +884,40 @@
       screen.classList.add('active');
     }
 
-    function resetGame() {
-      score = 0;
-      timeLeft = GAME_TIME;
-      combo = 0;
-      scoreValue.textContent = score;
-      timeValue.textContent = `${timeLeft}초`;
-         clearInterval(timerInterval);
-      clearInterval(spawnWatchInterval);
-      holeTimers.forEach(t => {
-        clearTimeout(t.spawnTimer);
-        clearTimeout(t.hideTimer);
-        t.spawnTimer = null;
-        t.hideTimer = null;
-      });
-      holeActive.fill(false);
-      holeBonusType.fill('none');
-      combo = 0;
-      lastHitAt = 0;
-      cells.forEach(cell => {
-        cell.classList.remove('up');
-        cell.querySelector('.mole-img').src = ASSETS.idle;
-        cell.querySelector('.fx-pop').classList.remove('show');
-        cell.querySelector('.fx-score').classList.remove('show');
-      });
-      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-      preloadAssets();
-    }
+function resetGame() {
+  score = 0;
+  timeLeft = GAME_TIME;
+  combo = 0;
+  mysterySpawnedThisGame = false;
+  nonMysterySpawnCount = 0;
+
+  scoreValue.textContent = score;
+  timeValue.textContent = `${timeLeft}초`;
+
+  clearInterval(timerInterval);
+  clearInterval(spawnWatchInterval);
+
+  holeTimers.forEach(t => {
+    clearTimeout(t.spawnTimer);
+    clearTimeout(t.hideTimer);
+    t.spawnTimer = null;
+    t.hideTimer = null;
+  });
+
+  holeActive.fill(false);
+  holeBonusType.fill('none');
+  lastHitAt = 0;
+
+  cells.forEach(cell => {
+    cell.classList.remove('up', 'mystery-up');
+    cell.querySelector('.mole-img').src = ASSETS.idle;
+    cell.querySelector('.fx-pop').classList.remove('show');
+    cell.querySelector('.fx-score').classList.remove('show');
+  });
+
+  vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+  preloadAssets();
+}
 
     function preloadAssets() {
       Object.values(ASSETS).forEach(src => {
@@ -932,26 +970,30 @@
       });
     }
 
-    function hideMole(i) {
-      if (paused) return;
-      const timers = holeTimers[i];
-      clearTimeout(timers.hideTimer);
-      timers.hideTimer = null;
-      holeActive[i] = false;
-      holeBonusType[i] = 'none';
-      const cell = cells[i];
-      cell.classList.remove('up');
-      const moleImg = cell.querySelector('.mole-img');
-      moleImg.src = ASSETS.idle;
-      const plus = cell.querySelector('.fx-score');
-      if (plus) {
-        setTimeout(() => {
-          plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-          plus.dataset.mode = '';
-        }, 560);
-      }
-    }
+ function hideMole(i) {
+  if (paused) return;
 
+  const timers = holeTimers[i];
+  clearTimeout(timers.hideTimer);
+  timers.hideTimer = null;
+
+  holeActive[i] = false;
+  holeBonusType[i] = 'none';
+
+  const cell = cells[i];
+  cell.classList.remove('up', 'mystery-up');
+
+  const moleImg = cell.querySelector('.mole-img');
+  moleImg.src = ASSETS.idle;
+
+  const plus = cell.querySelector('.fx-score');
+  if (plus) {
+    setTimeout(() => {
+      plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
+      plus.dataset.mode = '';
+    }, 560);
+  }
+}
     function scheduleSpawn(i, delay = 900 + Math.random() * 700) {
       if (paused) return;
       const timers = holeTimers[i];
@@ -969,23 +1011,40 @@
         scheduleSpawn(i, 900 + Math.random() * 600);
         return;
       }
+const roll = Math.random();
+const shouldForceMystery = !mysterySpawnedThisGame && nonMysterySpawnCount >= GUARANTEED_MYSTERY_AFTER_SPAWNS;
 
-      const roll = Math.random();
-      let bonus = 'none';
-      if (roll < BONUS_TIMER_CHANCE) {
-        bonus = 'timer';
-      } else if (roll < BONUS_TIMER_CHANCE + BONUS_SUPER_CHANCE) {
-        bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
-      }
+let bonus = 'none';
+
+if (shouldForceMystery) {
+  bonus = 'mystery';
+} else if (roll < BONUS_TIMER_CHANCE) {
+  bonus = 'timer';
+} else if (roll < BONUS_TIMER_CHANCE + BONUS_MYSTERY_CHANCE) {
+  bonus = 'mystery';
+} else if (roll < BONUS_TIMER_CHANCE + BONUS_MYSTERY_CHANCE + BONUS_SUPER_CHANCE) {
+  bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
+}
+
+
+      
       holeBonusType[i] = bonus;
 
       const moleImg = cell.querySelector('.mole-img');
-      if (bonus === 'timer') moleImg.src = ASSETS.time;
-      else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
-      else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
-      else moleImg.src = randomMoleSrc();
+ if (bonus === 'timer') moleImg.src = ASSETS.time;
+else if (bonus === 'mystery') moleImg.src = ASSETS.mystery;
+else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
+else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
+else moleImg.src = randomMoleSrc();
 
-      cell.classList.add('up');
+      cell.classList.toggle('mystery-up', bonus === 'mystery');
+cell.classList.add('up');
+if (bonus === 'mystery') {
+  mysterySpawnedThisGame = true;
+  nonMysterySpawnCount = 0;
+} else {
+  nonMysterySpawnCount += 1;
+}
       holeActive[i] = true;
 
       const visibleFor = Math.max(900, holeSpeed[i] + Math.random() * 300);
@@ -1043,30 +1102,206 @@
       countdownCancelArmed = false;
       countdownEl.classList.add('hidden');
       appEl.classList.remove('counting');
+      
     }
 
-    function hitMole(index) {
-      if (!running || paused || !allowInput) return;
-      const now = Date.now();
-      if (now < macroBlockUntil) return;
-      clickTimes.push(now);
-      while (clickTimes.length && clickTimes[0] < now - 1000) clickTimes.shift();
-      if (clickTimes.length > 1) {
-        const intervals = [];
-        for (let i = 1; i < clickTimes.length; i += 1) {
-          intervals.push(clickTimes[i] - clickTimes[i - 1]);
-        }
-        const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-        const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
-        const std = Math.sqrt(variance);
-        const fastCps = clickTimes.length > MACRO_CPS_LIMIT;
-        const suspiciousPattern = mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD;
-        if (fastCps || suspiciousPattern) {
-          macroBlockUntil = now + 1500; // 1.5초 동안 점수 무효
-          registerMiss();
-          return;
-        }
-      }
+    function resolveMysteryReward() {
+  const roll = Math.random();
+
+  if (roll < 0.5) return { scoreDelta: 3, timeDelta: 0, imageSrc: ASSETS.plus3 };
+  else if (roll < 0.75) return { scoreDelta: 5, timeDelta: 0, imageSrc: ASSETS.plus5 };
+  else if (roll < 0.9) return { scoreDelta: 0, timeDelta: 3, imageSrc: ASSETS.plus3 };
+  else return { scoreDelta: -3, timeDelta: 0, imageSrc: ASSETS.minus5 };
+}
+
+function hitMole(index) {
+  if (!running || paused || !allowInput) return;
+
+  const now = Date.now();
+  if (now < macroBlockUntil) return;
+
+  clickTimes.push(now);
+  while (clickTimes.length && clickTimes[0] < now - 1000) clickTimes.shift();
+
+  if (clickTimes.length > 1) {
+    const intervals = [];
+    for (let i = 1; i < clickTimes.length; i += 1) {
+      intervals.push(clickTimes[i] - clickTimes[i - 1]);
+    }
+
+    const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
+    const std = Math.sqrt(variance);
+    const fastCps = clickTimes.length > MACRO_CPS_LIMIT;
+    const suspiciousPattern = mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD;
+
+    if (fastCps || suspiciousPattern) {
+      macroBlockUntil = now + 1500;
+      registerMiss();
+      return;
+    }
+  }
+
+  const cell = cells[index];
+  if (!holeActive[index] || !cell.classList.contains('up')) {
+    registerMiss();
+    return;
+  }
+
+  const timers = holeTimers[index];
+  clearTimeout(timers.hideTimer);
+  timers.hideTimer = null;
+
+  const moleImg = cell.querySelector('.mole-img');
+  const pop = cell.querySelector('.fx-pop');
+  const plus = cell.querySelector('.fx-score');
+  let plusImg = plus.querySelector('img');
+  let label = plus.querySelector('.bonus-label');
+
+  const isBonusTimer = holeBonusType[index] === 'timer';
+  const isBonusMystery = holeBonusType[index] === 'mystery';
+  const isBonusSuperPlus = holeBonusType[index] === 'superPlus';
+  const isBonusSuperMinus = holeBonusType[index] === 'superMinus';
+  const mysteryReward = isBonusMystery ? resolveMysteryReward() : null;
+
+  holeActive[index] = false;
+
+  if (now - lastHitAt > 500) combo = 0;
+  combo = Math.min(combo + 1, 5);
+
+  if (isBonusSuperPlus) {
+    moleImg.src = ASSETS.thx;
+  } else if (isBonusSuperMinus) {
+    moleImg.src = ASSETS.yx;
+  } else {
+    moleImg.src = ASSETS.hit;
+  }
+
+  pop.classList.remove('show');
+  plus.classList.remove('show');
+  void pop.offsetWidth;
+  void plus.offsetWidth;
+
+  if (!isBonusTimer) {
+    pop.classList.add('show');
+  }
+
+  if (isBonusTimer) {
+    const bonusSpan = document.createElement('span');
+    bonusSpan.className = 'bonus-label bonus-timer';
+    bonusSpan.textContent = '+3s';
+
+    plus.replaceChildren(bonusSpan);
+    plus.dataset.mode = 'timer';
+    plusImg = null;
+    label = bonusSpan;
+
+  } else if (isBonusMystery) {
+    pop.querySelector('img').src = ASSETS.fire3;
+
+    plus.replaceChildren();
+    const img = document.createElement('img');
+    img.src = mysteryReward.imageSrc;
+    plus.appendChild(img);
+
+    plus.dataset.mode = 'mystery';
+    plusImg = img;
+    combo = 0;
+
+    if (vibrateOn && navigator.vibrate) {
+      navigator.vibrate([10, 40, 10]);
+    }
+
+  } else if (isBonusSuperPlus) {
+    pop.querySelector('img').src = ASSETS.fire3;
+    if (label) label.style.display = 'none';
+
+    plus.replaceChildren();
+    const img = document.createElement('img');
+    img.src = ASSETS.plus5;
+    img.alt = '+5';
+    plus.appendChild(img);
+
+    plusImg = img;
+    plus.dataset.mode = 'superPlus';
+    combo = 0;
+
+  } else if (isBonusSuperMinus) {
+    pop.querySelector('img').src = ASSETS.fire3;
+    if (label) label.style.display = 'none';
+
+    plus.replaceChildren();
+    const img = document.createElement('img');
+    img.src = ASSETS.minus5;
+    img.alt = '-5';
+    plus.appendChild(img);
+
+    plusImg = img;
+    plus.dataset.mode = 'superMinus';
+    combo = 0;
+
+  } else if (combo >= 2) {
+    pop.querySelector('img').src = ASSETS.fire2;
+    if (label) label.style.display = 'none';
+
+    if (plusImg) {
+      plusImg.style.display = 'block';
+      plusImg.src = ASSETS.plus2;
+    }
+    plus.dataset.mode = 'combo';
+
+  } else {
+    pop.querySelector('img').src = ASSETS.fire;
+    if (label) label.style.display = 'none';
+
+    if (plusImg) {
+      plusImg.style.display = 'block';
+      plusImg.src = ASSETS.plus;
+    }
+    plus.dataset.mode = 'normal';
+  }
+
+  plus.classList.add('show');
+
+  const isCombo = combo >= 2;
+  const addedScore = isBonusTimer ? 0
+    : isBonusMystery ? mysteryReward.scoreDelta
+    : isBonusSuperPlus ? 5
+    : isBonusSuperMinus ? -5
+    : (isCombo ? 2 : 1);
+
+  score += addedScore;
+  scoreValue.textContent = score;
+  lastHitAt = now;
+
+  if (isBonusTimer) {
+    timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
+    timeValue.textContent = `${timeLeft}초`;
+    combo = 0;
+
+  } else if (isBonusMystery) {
+    if (mysteryReward.timeDelta) {
+      timeLeft = Math.min(GAME_TIME, timeLeft + mysteryReward.timeDelta);
+      timeValue.textContent = `${timeLeft}초`;
+    }
+    combo = 0;
+
+  } else if (isBonusSuperPlus || isBonusSuperMinus) {
+    combo = 0;
+
+  } else if (isCombo) {
+    combo = 0;
+  }
+
+  if (vibrateOn && navigator.vibrate && !isBonusMystery) {
+    navigator.vibrate(isCombo ? [8, 20, 12] : 12);
+  }
+
+  setTimeout(() => {
+    hideMole(index);
+    scheduleSpawn(index, 120);
+  }, 220);
+}
       const cell = cells[index];
       if (!holeActive[index] || !cell.classList.contains('up')) {
         registerMiss();
@@ -1083,6 +1318,8 @@
       let plusImg = plus.querySelector('img');
       let label = plus.querySelector('.bonus-label');
       const isBonusTimer = holeBonusType[index] === 'timer';
+      const isBonusMystery = holeBonusType[index] === 'mystery';
+const mysteryReward = isBonusMystery ? resolveMysteryReward() : null;
       const isBonusSuperPlus = holeBonusType[index] === 'superPlus';
       const isBonusSuperMinus = holeBonusType[index] === 'superMinus';
 
@@ -1104,7 +1341,35 @@
         pop.classList.add('show');
       }
       if (isBonusTimer) {
-        const bonusSpan = document.createElement('span');
+  const bonusSpan = document.createElement('span');
+  bonusSpan.className = 'bonus-label bonus-timer';
+  bonusSpan.textContent = '+3s';
+
+  plus.replaceChildren(bonusSpan);
+  plus.dataset.mode = 'timer';
+  plusImg = null;
+  label = bonusSpan;
+
+} else if (isBonusMystery) {
+  pop.querySelector('img').src = ASSETS.fire3;
+
+  plus.replaceChildren();
+  const img = document.createElement('img');
+  img.src = mysteryReward.imageSrc;
+  plus.appendChild(img);
+
+  plus.dataset.mode = 'mystery';
+  plusImg = img;
+
+  combo = 0;
+
+  if (vibrateOn && navigator.vibrate) {
+    navigator.vibrate([10, 40, 10]);
+  }
+}
+
+
+      
         bonusSpan.className = 'bonus-label bonus-timer';
         bonusSpan.textContent = '+3s';
         plus.replaceChildren(bonusSpan);
@@ -1154,6 +1419,7 @@
 
       const isCombo = combo >= 2;
       const addedScore = isBonusTimer ? 0
+                  : isBonusMystery ? mysteryReward.scoreDelta
                         : isBonusSuperPlus ? 5
                         : isBonusSuperMinus ? -5
                         : (isCombo ? 2 : 1);
@@ -1162,6 +1428,12 @@
       lastHitAt = now;
       if (isBonusTimer) {
         timeLeft = Math.min(GAME_TIME, timeLeft + BONUS_TIME_ADD);
+        } else if (isBonusMystery) {
+  if (mysteryReward.timeDelta) {
+    timeLeft = Math.min(GAME_TIME, timeLeft + mysteryReward.timeDelta);
+    timeValue.textContent = `${timeLeft}초`;
+  }
+  combo = 0;
         timeValue.textContent = `${timeLeft}초`;
          combo = 0;
       } else if (isBonusSuperPlus || isBonusSuperMinus) {
