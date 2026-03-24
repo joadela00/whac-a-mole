@@ -115,10 +115,6 @@
       display: flex;
     }
 
-.app.shake {
-  animation: shake 0.2s;
-}
-
 .cell.hit {
   animation: hitScale 0.12s;
 }
@@ -128,16 +124,6 @@
   50% { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
-    
-    
-@keyframes shake {
-  0% { transform: translate(0); }
-  25% { transform: translate(-3px, 2px); }
-  50% { transform: translate(3px, -2px); }
-  75% { transform: translate(-2px, 1px); }
-  100% { transform: translate(0); }
-}
-
     
     /* Blur active screen during countdown (restart only) */
     .app.counting .screen.active {
@@ -1217,13 +1203,7 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   }
 
   const isCombo = combo >= 2;
-if (isCombo) {
-  appEl.classList.remove('shake');
-  void appEl.offsetWidth;
-  appEl.classList.add('shake');
-  setTimeout(() => appEl.classList.remove('shake'), 180);
-}
-  
+
   
 if (isMystery) {
   moleImg.style.opacity = '0';
