@@ -1220,7 +1220,7 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   const isCombo = combo >= 2;
   
 if (isMystery) {
-  cell.classList.remove('up');
+  moleImg.style.opacity = '0';
 } else {
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
 }
