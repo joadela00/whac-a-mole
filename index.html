@@ -114,6 +114,19 @@
       display: flex;
     }
 
+.app.shake {
+  animation: shake 0.2s;
+}
+
+@keyframes shake {
+  0% { transform: translate(0); }
+  25% { transform: translate(-3px, 2px); }
+  50% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, 1px); }
+  100% { transform: translate(0); }
+}
+
+    
     /* Blur active screen during countdown (restart only) */
     .app.counting .screen.active {
       filter: blur(2px);
@@ -1040,7 +1053,12 @@ cell.classList.add('up');
 
       holeActive[i] = true;
 
-      const visibleFor = Math.max(900, holeSpeed[i] + Math.random() * 300);
+  const speedMultiplier = Math.max(0.4, 1 - score / 500);
+
+const visibleFor = Math.max(
+  500,
+  (holeSpeed[i] + Math.random() * 300) * speedMultiplier
+);
       timers.hideTimer = setTimeout(() => {
         hideMole(i);
         scheduleSpawn(i);
@@ -1197,6 +1215,9 @@ if (isMystery) {
   }else if (isMystery) {
 
   if (reward.scoreDelta === 10) {
+
+    appEl.classList.add('shake');
+setTimeout(() => appEl.classList.remove('shake'), 200);
     // +5 두 번 연출
     plus.innerHTML = `<img src="${ASSETS.plus5}">`;
     plus.classList.add('show');
@@ -1222,8 +1243,6 @@ if (isMystery) {
   } else {
     plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
   }
-
-  plus.classList.add('show');
 
   const add =
     isTimer ? 0 :
