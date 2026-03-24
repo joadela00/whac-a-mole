@@ -973,8 +973,8 @@ function resetGame() {
       });
     }
 
-function hideMole(i) {
-  if (paused) return;
+function hideMole(i, force = false) {
+  if (paused && !force) return;
 
   const timers = holeTimers[i];
   clearTimeout(timers.hideTimer);
@@ -1120,27 +1120,15 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 200);
     }
 
 function resolveMysteryReward() {
-  const roll = Math.random();
+  // +3 / +5 / +5 / +5
+  const slot = Math.floor(Math.random() * 4); // 0,1,2,3
+  const isPlus3 = slot === 0;
 
-  if (roll < 0.6) {
-    return {
-      scoreDelta: 3,
-      imageSrc: ASSETS.plus3,
-      imageAlt: '+3',
-    };
-  } else if (roll < 0.9) {
-    return {
-      scoreDelta: 5,
-      imageSrc: ASSETS.plus5,
-      imageAlt: '+5',
-    };
-  } else {
-    return {
-      scoreDelta: 10,
-      imageSrc: ASSETS.plus5, // +10 전용 이미지 없으면 임시로 사용
-      imageAlt: '+10',
-    };
-  }
+  return {
+    scoreDelta: isPlus3 ? 3 : 5,
+    imageSrc: isPlus3 ? ASSETS.plus3 : ASSETS.plus5,
+    imageAlt: isPlus3 ? '+3' : '+5',
+  };
 }
     
 function hitMole(index) {
@@ -1296,13 +1284,13 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       running = false;
       clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
-      holeTimers.forEach(t => {
-        clearTimeout(t.spawnTimer);
-        clearTimeout(t.hideTimer);
-        t.spawnTimer = null;
-        t.hideTimer = null;
-      });
-      cells.forEach((_, i) => hideMole(i));
+holeTimers.forEach((t, i) => {
+  clearTimeout(t.spawnTimer);
+  clearTimeout(t.hideTimer);
+  t.spawnTimer = null;
+  t.hideTimer = null;
+  hideMole(i, true);
+});
       finalScore.textContent = score;
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
       setScreen(gameOverScreen);
@@ -1339,7 +1327,13 @@ pauseBtn.addEventListener('pointerdown', () => {
     allowInput = false;
     clearInterval(timerInterval);
     clearInterval(spawnWatchInterval);
-
+holeTimers.forEach((t, i) => {
+  clearTimeout(t.spawnTimer);
+  clearTimeout(t.hideTimer);
+  t.spawnTimer = null;
+  t.hideTimer = null;
+  hideMole(i, true);
+});
     // 👉 일시정지 상태 → ▶ 버튼
     pauseBtn.style.backgroundImage = "url('assets/ja.png')";
 
@@ -1350,7 +1344,11 @@ pauseBtn.addEventListener('pointerdown', () => {
     pauseBtn.style.backgroundImage = "url('assets/pa.png')";
 
     allowInput = true;
-
+ for (let i = 0; i < HOLE_COUNT; i++) {
+    if (!holeActive[i] && !holeTimers[i].spawnTimer) {
+      scheduleSpawn(i, 120 + Math.random() * 180);
+    }
+  }
     spawnWatchInterval = setInterval(() => {
       if (!running || paused) return;
       scheduleFreeSlots();
