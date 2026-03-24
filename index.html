@@ -919,12 +919,6 @@ function resetGame() {
   clearInterval(timerInterval);
   clearInterval(spawnWatchInterval);
 
-  holeTimers.forEach(t => {
-    clearTimeout(t.spawnTimer);
-    clearTimeout(t.hideTimer);
-    t.spawnTimer = null;
-    t.hideTimer = null;
-  });
 
   scoreResetTimers.forEach((t, i) => {
   clearTimeout(t);
@@ -1390,12 +1384,6 @@ bindActionPress(pauseBtn, () => {
     appEl.classList.remove('paused');
     pauseBtn.style.backgroundImage = "url('assets/pa.png')";
     allowInput = true;
-
-    for (let i = 0; i < HOLE_COUNT; i++) {
-      if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-        scheduleSpawn(i, 120 + Math.random() * 180);
-      }
-    }
 
     spawnWatchInterval = setInterval(() => {
       if (!running || paused) return;
