@@ -803,7 +803,7 @@
 
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
-    const MAX_ACTIVE = 3;
+    const MAX_ACTIVE = 2;
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
 const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
@@ -1075,8 +1075,8 @@ cell.classList.add('up');
   const speedMultiplier = Math.max(0.4, 1 - score / 500);
 
 const visibleFor = Math.max(
-  350,
-  (holeSpeed[i] + Math.random() * 300) * speedMultiplier
+  500,
+  (holeSpeed[i] + Math.random() * 320) * speedMultiplier
 );
       timers.hideTimer = setTimeout(() => {
         hideMole(i);
@@ -1292,13 +1292,13 @@ setTimeout(() => {
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
       setScreen(gameScreen);
 for (let i = 0; i < HOLE_COUNT; i++) {
-  scheduleSpawn(i, 200 + Math.random() * 300);
+  if (i < 3) scheduleSpawn(i, 280 + Math.random() * 260);
 }
    
       spawnWatchInterval = setInterval(() => {
         if (!running) return;
         scheduleFreeSlots();
-      }, 300);
+      }, 550);
 
       timerInterval = setInterval(() => {
         timeLeft -= 1;
