@@ -33,6 +33,7 @@
   <link rel="preload" as="image" href="assets/3q.png">
   <link rel="preload" as="image" href="assets/score_plus3.png">
   <link rel="preload" as="image" href="assets/score_minus3.png">
+  <link rel="preload" as="image" href="assets/ja.png">
   <style>
     /* iOS 감지용 */
     :root {
@@ -1079,8 +1080,8 @@ const visibleFor = Math.max(
     function registerMiss() {
   if (!allowInput || paused) return;
 
-  document.body.classList.add('miss');
-  setTimeout(() => document.body.classList.remove('miss'), 200);
+  document.body.classList.add('miss-flash');
+setTimeout(() => document.body.classList.remove('miss-flash'), 200);
 
   allowInput = false;
   setTimeout(() => {
@@ -1224,11 +1225,13 @@ if (isMystery) {
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
 }
 
-  pop.classList.remove('show');
-  plus.classList.remove('show');
-  void pop.offsetWidth;
+pop.classList.remove('show');
+plus.classList.remove('show');
 
- if (!isTimer && !isMystery) pop.classList.add('show');
+void pop.offsetWidth;
+void plus.offsetWidth;
+
+if (!isTimer && !isMystery) pop.classList.add('show');
 
   if (isTimer) {
     plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
@@ -1263,7 +1266,11 @@ setTimeout(() => appEl.classList.remove('shake'), 200);
   } else {
     plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
   }
-
+  
+if (!(isMystery && reward.scoreDelta === 10)) {
+  void plus.offsetWidth;
+  plus.classList.add('show');
+}
   const add =
     isTimer ? 0 :
     isMystery ? reward.scoreDelta :
@@ -1286,12 +1293,14 @@ setTimeout(() => appEl.classList.remove('shake'), 200);
     navigator.vibrate(isCombo ? [8, 20, 12] : 12);
   }
 
-  setTimeout(() => {
-    hideMole(index);
-    scheduleSpawn(index, 120);
-  }, 220);
-}
+setTimeout(() => {
+  hideMole(index);
+}, 550);
 
+setTimeout(() => {
+  scheduleSpawn(index, 120);
+}, 650);
+}
     function startGame() {
       resetGame();
       running = true;
