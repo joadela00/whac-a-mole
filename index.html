@@ -814,7 +814,7 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const BONUS_TIME_ADD = 3;
     const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
-    const MACRO_MEAN_THRESHOLD = 80; // 평균 간격 80ms 이하(12.5cps)이면 의심
+    const MACRO_MEAN_THRESHOLD = 60; // 평균 간격 60ms 이하이면 의심
     const SPAWN_PATTERNS = [
       [0,1,2],
       [3,4,5],
@@ -1004,7 +1004,10 @@ function hideMole(i) {
 
   const moleImg = cell.querySelector('.mole-img');
   moleImg.style.opacity = '';
-  moleImg.src = ASSETS.idle; // ← 이것만 남기면 됨
+  
+  if (!cell.classList.contains('up')) {
+  moleImg.src = ASSETS.idle;
+}
 
   const plus = cell.querySelector('.fx-score');
   if (plus) {
