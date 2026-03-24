@@ -126,11 +126,10 @@
 }
     
     /* Blur active screen during countdown (restart only) */
-    ..app.counting .screen.active {
+ .app.counting .screen.active {
   filter: blur(2px);
   pointer-events: none;
 }
-
     .start-screen,
     .gameover-screen {
       flex-direction: column;
@@ -584,7 +583,7 @@
 .cancel-hint {
   position: absolute;
   left: 50%;
-  top: calc(50% + 82px);
+  top: calc(60% + 82px);
   transform: translateX(-50%);
   z-index: 1000;
   color: #fff8df;
