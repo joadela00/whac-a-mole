@@ -118,6 +118,17 @@
   animation: shake 0.2s;
 }
 
+.cell.hit {
+  animation: hitScale 0.12s;
+}
+
+@keyframes hitScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+    
+    
 @keyframes shake {
   0% { transform: translate(0); }
   25% { transform: translate(-3px, 2px); }
@@ -1066,13 +1077,19 @@ const visibleFor = Math.max(
     }
 
     function registerMiss() {
-      if (!allowInput || paused) return;
-      allowInput = false;
-      setTimeout(() => {
-        allowInput = true;
-      }, 200);
-      combo = 0;
-    }
+  if (!allowInput || paused) return;
+
+  document.body.classList.add('miss');
+  setTimeout(() => document.body.classList.remove('miss'), 200);
+
+  allowInput = false;
+  setTimeout(() => {
+    allowInput = true;
+  }, 200);
+
+  combo = 0;
+}
+
 
     function startCountdown(callback, useBlur = false, cancelable = false) {
       if (countingDown || running) return;
@@ -1170,6 +1187,9 @@ function hitMole(index) {
   }
 
   const cell = cells[index];
+cell.classList.add('hit');
+setTimeout(() => cell.classList.remove('hit'), 120);
+  
   if (!holeActive[index] || !cell.classList.contains('up')) {
     registerMiss();
     return;
