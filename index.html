@@ -1011,13 +1011,6 @@ function hideMole(i) {
     }, 560);
   }
 }
-  const plus = cell.querySelector('.fx-score');
-  if (plus) {
-    setTimeout(() => {
-      plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-    }, 560);
-  }
-}
     function scheduleSpawn(i, delay = 300 + Math.random() * 400) {
       if (paused) return;
       const timers = holeTimers[i];
