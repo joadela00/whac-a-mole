@@ -1099,13 +1099,27 @@ cell.classList.add('up');
     }
 
 function resolveMysteryReward() {
-  const isGoodReward = Math.random() < 0.5;
-  return {
-    scoreDelta: isGoodReward ? 3 : -3,
-    timeDelta: 0,
-    imageSrc: isGoodReward ? ASSETS.plus3 : ASSETS.minus3,
-    imageAlt: isGoodReward ? '+3' : '-3',
-   };
+  const roll = Math.random();
+
+  if (roll < 0.6) {
+    return {
+      scoreDelta: 3,
+      imageSrc: ASSETS.plus3,
+      imageAlt: '+3',
+    };
+  } else if (roll < 0.9) {
+    return {
+      scoreDelta: 5,
+      imageSrc: ASSETS.plus5,
+      imageAlt: '+5',
+    };
+  } else {
+    return {
+      scoreDelta: 10,
+      imageSrc: ASSETS.plus5, // +10 전용 이미지 없으면 임시로 사용
+      imageAlt: '+10',
+    };
+  }
 }
     
 function hitMole(index) {
@@ -1168,22 +1182,38 @@ function hitMole(index) {
   
 if (isMystery) {
   cell.classList.remove('up');
-}
-
+} else {
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
+}
 
   pop.classList.remove('show');
   plus.classList.remove('show');
   void pop.offsetWidth;
 
-  if (!isTimer) pop.classList.add('show');
+ if (!isTimer && !isMystery) pop.classList.add('show');
 
   if (isTimer) {
     plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
-  } else if (isMystery) {
+  }else if (isMystery) {
+
+  if (reward.scoreDelta === 10) {
+    // +5 두 번 연출
+    plus.innerHTML = `<img src="${ASSETS.plus5}">`;
+    plus.classList.add('show');
+
+    setTimeout(() => {
+      plus.classList.remove('show');
+      void plus.offsetWidth;
+
+      plus.innerHTML = `<img src="${ASSETS.plus5}">`;
+      plus.classList.add('show');
+    }, 180);
+
+  } else {
     plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
-    if (vibrateOn && navigator.vibrate) navigator.vibrate([10, 40, 10]);
-  } else if (isPlus) {
+    }
+
+} else if (isPlus) {
     plus.innerHTML = `<img src="${ASSETS.plus5}" alt="+5">`;
   } else if (isMinus) {
     plus.innerHTML = `<img src="${ASSETS.minus5}" alt="-5">`;
@@ -1211,10 +1241,7 @@ if (isMystery) {
     timeValue.textContent = `${timeLeft}초`;
   }
 
-  if (isMystery && reward.timeDelta) {
-    timeLeft = Math.min(GAME_TIME, timeLeft + reward.timeDelta);
-    timeValue.textContent = `${timeLeft}초`;
-  }
+
 
   if (vibrateOn && navigator.vibrate && !isMystery) {
     navigator.vibrate(isCombo ? [8, 20, 12] : 12);
