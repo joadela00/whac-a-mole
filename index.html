@@ -1088,7 +1088,7 @@ const visibleFor = Math.max(
   if (!allowInput || paused) return;
 
   document.body.classList.add('miss-flash');
-setTimeout(() => document.body.classList.remove('miss-flash'), 200);
+setTimeout(() => document.body.classList.remove('miss-flash'), 0);
 
   allowInput = false;
   setTimeout(() => {
