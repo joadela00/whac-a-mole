@@ -937,6 +937,13 @@ function resetGame() {
   });
 
   vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+
+  holeTimers.forEach(t => {
+  clearTimeout(t.spawnTimer);
+  clearTimeout(t.hideTimer);
+  t.spawnTimer = null;
+  t.hideTimer = null;
+});
 }
 
     function preloadAssets() {
@@ -1311,7 +1318,6 @@ holeTimers.forEach((t, i) => {
   clearTimeout(t.hideTimer);
   t.spawnTimer = null;
   t.hideTimer = null;
-  hideMole(i, true);
 });
       finalScore.textContent = score;
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
