@@ -1233,44 +1233,25 @@ void plus.offsetWidth;
 
 if (!isTimer && !isMystery) pop.classList.add('show');
 
-  if (isTimer) {
-    plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
-  }else if (isMystery) {
-
-  if (reward.scoreDelta === 10) {
-
-    appEl.classList.add('shake');
-setTimeout(() => appEl.classList.remove('shake'), 200);
-    // +5 두 번 연출
-    plus.innerHTML = `<img src="${ASSETS.plus5}">`;
-    plus.classList.add('show');
-
-    setTimeout(() => {
-      plus.classList.remove('show');
-      void plus.offsetWidth;
-
-      plus.innerHTML = `<img src="${ASSETS.plus5}">`;
-      plus.classList.add('show');
-    }, 180);
-
-  } else {
-    plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
-    }
-
+// 👉 여기 순서가 핵심
+if (isTimer) {
+  plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
+} else if (isMystery) {
+  plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
 } else if (isPlus) {
-    plus.innerHTML = `<img src="${ASSETS.plus5}" alt="+5">`;
-  } else if (isMinus) {
-    plus.innerHTML = `<img src="${ASSETS.minus5}" alt="-5">`;
-  } else if (isCombo) {
-    plus.innerHTML = `<img src="${ASSETS.plus2}" alt="+2">`;
-  } else {
-    plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-  }
-  
-if (!(isMystery && reward.scoreDelta === 10)) {
-  void plus.offsetWidth;
-  plus.classList.add('show');
+  plus.innerHTML = `<img src="${ASSETS.plus5}" alt="+5">`;
+} else if (isMinus) {
+  plus.innerHTML = `<img src="${ASSETS.minus5}" alt="-5">`;
+} else if (isCombo) {
+  plus.innerHTML = `<img src="${ASSETS.plus2}" alt="+2">`;
+} else {
+  plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
 }
+
+// 👉 마지막에 무조건 실행
+plus.classList.add('show');
+  
+
   const add =
     isTimer ? 0 :
     isMystery ? reward.scoreDelta :
