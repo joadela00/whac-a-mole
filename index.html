@@ -804,7 +804,7 @@
 
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
-    const MAX_ACTIVE = 4;
+    const MAX_ACTIVE = 3;
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
 const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
@@ -852,7 +852,7 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     let score = 0;
     let timeLeft = GAME_TIME;
     const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
-    const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 150 + Math.random() * 600); // 더 느리게
+    const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 350 + Math.random() * 600); // 더 느리게
     const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
     const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'mystery' | 'superPlus' | 'superMinus'
     let combo = 0;
@@ -1069,7 +1069,7 @@ cell.classList.add('up');
   const speedMultiplier = Math.max(0.4, 1 - score / 500);
 
 const visibleFor = Math.max(
-  400,
+  550,
   (holeSpeed[i] + Math.random() * 300) * speedMultiplier
 );
       timers.hideTimer = setTimeout(() => {
