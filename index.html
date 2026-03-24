@@ -1257,6 +1257,7 @@ setTimeout(() => {
 }, 650);
 }
     function startGame() {
+      appEl.classList.remove('paused');
       resetGame();
       running = true;
       paused = false;
@@ -1294,30 +1295,47 @@ holeTimers.forEach((t, i) => {
       finalScore.textContent = score;
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
       setScreen(gameOverScreen);
+      appEl.classList.remove('paused');
     }
 
-    startBtn.addEventListener('pointerdown', () => {
-      if (running || countingDown) return;
-      startCountdown(startGame, false);
-    });
+function bindActionPress(el, handler) {
+  if (!el) return;
+  let lastActionAt = 0;
 
-    restartBtn.addEventListener('pointerdown', () => {
-      if (running || countingDown) return;
-      startCountdown(startGame, true, true);
-    });
+  const invoke = (e) => {
+    const now = Date.now();
+    if (now - lastActionAt < 80) return;
+    lastActionAt = now;
+    if (e) e.preventDefault();
+    handler();
+  };
 
-    restartSmallBtn.addEventListener('pointerdown', () => {
-      if (countingDown) return;
-      if (running) endGame();
-      startCountdown(startGame, true, true);
-    });
+  el.addEventListener('pointerdown', invoke);
+  el.addEventListener('click', invoke);
+}
 
-    vibeBtn.addEventListener('pointerdown', () => {
-      vibrateOn = !vibrateOn;
-      vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-    });
+bindActionPress(startBtn, () => {
+  if (running || countingDown) return;
+  startCountdown(startGame, false);
+});
 
-pauseBtn.addEventListener('pointerdown', () => {
+bindActionPress(restartBtn, () => {
+  if (running || countingDown) return;
+  startCountdown(startGame, true, true);
+});
+
+bindActionPress(restartSmallBtn, () => {
+  if (countingDown) return;
+  if (running) endGame();
+  startCountdown(startGame, true, true);
+});
+
+bindActionPress(vibeBtn, () => {
+  vibrateOn = !vibrateOn;
+  vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
+});
+
+bindActionPress(pauseBtn, () => {
   if (!running || countingDown) return;
 
   paused = !paused;
@@ -1327,28 +1345,27 @@ pauseBtn.addEventListener('pointerdown', () => {
     allowInput = false;
     clearInterval(timerInterval);
     clearInterval(spawnWatchInterval);
-holeTimers.forEach((t, i) => {
-  clearTimeout(t.spawnTimer);
-  clearTimeout(t.hideTimer);
-  t.spawnTimer = null;
-  t.hideTimer = null;
-  hideMole(i, true);
-});
-    // 👉 일시정지 상태 → ▶ 버튼
-    pauseBtn.style.backgroundImage = "url('assets/ja.png')";
 
+    holeTimers.forEach((t, i) => {
+      clearTimeout(t.spawnTimer);
+      clearTimeout(t.hideTimer);
+      t.spawnTimer = null;
+      t.hideTimer = null;
+      hideMole(i, true);
+    });
+
+    pauseBtn.style.backgroundImage = "url('assets/ja.png')";
   } else {
     appEl.classList.remove('paused');
-
-    // 👉 재생 상태 → || 버튼
     pauseBtn.style.backgroundImage = "url('assets/pa.png')";
-
     allowInput = true;
- for (let i = 0; i < HOLE_COUNT; i++) {
-    if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-      scheduleSpawn(i, 120 + Math.random() * 180);
+
+    for (let i = 0; i < HOLE_COUNT; i++) {
+      if (!holeActive[i] && !holeTimers[i].spawnTimer) {
+        scheduleSpawn(i, 120 + Math.random() * 180);
+      }
     }
-  }
+
     spawnWatchInterval = setInterval(() => {
       if (!running || paused) return;
       scheduleFreeSlots();
@@ -1356,16 +1373,16 @@ holeTimers.forEach((t, i) => {
 
     timerInterval = setInterval(() => {
       if (paused) return;
-
       timeLeft -= 1;
       timeValue.textContent = `${timeLeft}초`;
-
-      if (timeLeft <= 0) {
-        endGame();
-      }
+      if (timeLeft <= 0) endGame();
     }, 1000);
   }
 });
+
+
+
+
 
 
   
