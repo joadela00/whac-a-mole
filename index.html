@@ -989,7 +989,7 @@ function resetGame() {
       });
     }
 
- function hideMole(i) {
+function hideMole(i) {
   if (paused) return;
 
   const timers = holeTimers[i];
@@ -1003,17 +1003,17 @@ function resetGame() {
   cell.classList.remove('up', 'mystery-up');
 
   const moleImg = cell.querySelector('.mole-img');
-  moleImg.src = ASSETS.idle;
+  moleImg.style.opacity = '';
+  moleImg.src = ASSETS.idle; // ← 이것만 남기면 됨
 
   const plus = cell.querySelector('.fx-score');
   if (plus) {
     setTimeout(() => {
       plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-      plus.dataset.mode = '';
     }, 560);
   }
 }
-    function scheduleSpawn(i, delay = 900 + Math.random() * 700) {
+    function scheduleSpawn(i, delay = 300 + Math.random() * 400) {
       if (paused) return;
       const timers = holeTimers[i];
       clearTimeout(timers.spawnTimer);
@@ -1027,7 +1027,7 @@ function resetGame() {
       const cell = cells[i];
       if (cell.classList.contains('up')) return;
       if (activeCount() >= MAX_ACTIVE) {
-        scheduleSpawn(i, 900 + Math.random() * 600);
+        scheduleSpawn(i, 200); 
         return;
       }
 const roll = Math.random();
@@ -1214,7 +1214,7 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   holeActive[index] = false;
 
   if (!isTimer && !isMystery) {
-    combo = (now - lastHitAt > 700) ? 1 : Math.min(combo + 1, 5);
+    combo = (now - lastHitAt > 900) ? 1 : Math.min(combo + 1, 5);
   } else {   combo = 0; // 👈 이거 반드시 필요
   }
 
@@ -1292,10 +1292,7 @@ setTimeout(() => {
 for (let i = 0; i < HOLE_COUNT; i++) {
   scheduleSpawn(i, 200 + Math.random() * 300);
 }
-      order.slice(MAX_ACTIVE).forEach((i, idx) => {
-        const base = 1000 + Math.random() * 800;
-        scheduleSpawn(i, base + idx * 140);
-      });
+   
       spawnWatchInterval = setInterval(() => {
         if (!running) return;
         scheduleFreeSlots();
@@ -1372,7 +1369,7 @@ pauseBtn.addEventListener('pointerdown', () => {
     spawnWatchInterval = setInterval(() => {
       if (!running || paused) return;
       scheduleFreeSlots();
-    }, 1100);
+    }, 300);
 
     timerInterval = setInterval(() => {
       if (paused) return;
