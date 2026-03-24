@@ -581,7 +581,18 @@
       width: 100%;
       height: 100%;
     }
-
+.cancel-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 82px);
+  transform: translateX(-50%);
+  z-index: 1000;
+  color: #fff8df;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  pointer-events: none;
+}
     .app.paused * {
       animation-play-state: paused !important;
       transition-duration: 0s !important;
@@ -736,6 +747,7 @@
 <body>
   <div class="app">
     <div id="countdown" class="countdown hidden">3</div>
+    <div id="cancelHint" class="cancel-hint hidden">취소하려면 아무 곳이나 터치</div>
     <section class="screen start-screen active" id="startScreen">
       <div class="title-board title-image">두더지 잡기!</div>
       <div class="hero-hole" style="margin-bottom: 50px;">
@@ -784,6 +796,7 @@
     const timeValue = document.getElementById('timeValue');
     const finalScore = document.getElementById('finalScore');
     const countdownEl = document.getElementById('countdown');
+    const cancelHintEl = document.getElementById('cancelHint');
 
     if (vibeBtn && isiOS) {
       vibeBtn.style.display = 'none';
@@ -1095,6 +1108,9 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 200);
       if (useBlur) appEl.classList.add('counting');
       let n = 3;
       countdownEl.classList.remove('hidden');
+      if (cancelHintEl) {
+  cancelHintEl.classList.toggle('hidden', !cancelable);
+}
       countdownEl.textContent = n;
       countdownTimer = setInterval(() => {
         n--;
@@ -1106,6 +1122,7 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 200);
           clearInterval(countdownTimer);
           countdownTimer = null;
           countdownEl.classList.add('hidden');
+          if (cancelHintEl) cancelHintEl.classList.add('hidden');
           countingDown = false;
           allowCountdownCancel = false;
           countdownCancelArmed = false;
@@ -1124,6 +1141,7 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 200);
       allowCountdownCancel = false;
       countdownCancelArmed = false;
       countdownEl.classList.add('hidden');
+      if (cancelHintEl) cancelHintEl.classList.add('hidden');
       appEl.classList.remove('counting');
       
     }
