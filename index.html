@@ -1069,7 +1069,7 @@ cell.classList.add('up');
   const speedMultiplier = Math.max(0.4, 1 - score / 500);
 
 const visibleFor = Math.max(
-  600,
+  450,
   (holeSpeed[i] + Math.random() * 300) * speedMultiplier
 );
       timers.hideTimer = setTimeout(() => {
@@ -1214,7 +1214,7 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   holeActive[index] = false;
 
   if (!isTimer && !isMystery) {
-    combo = (now - lastHitAt > 500) ? 1 : Math.min(combo + 1, 5);
+    combo = (now - lastHitAt > 700) ? 1 : Math.min(combo + 1, 5);
   } else {   combo = 0; // 👈 이거 반드시 필요
   }
 
@@ -1258,7 +1258,7 @@ plus.classList.add('show');
     isMystery ? reward.scoreDelta :
     isPlus ? 5 :
     isMinus ? -5 :
-    (isCombo ? 2 : 1);
+    (isCombo ? 3 : 1);
 
   score += add;
   scoreValue.textContent = score;
@@ -1300,7 +1300,7 @@ setTimeout(() => {
       spawnWatchInterval = setInterval(() => {
         if (!running) return;
         scheduleFreeSlots();
-      }, 1100);
+      }, 300);
 
       timerInterval = setInterval(() => {
         timeLeft -= 1;
