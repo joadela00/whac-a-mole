@@ -803,7 +803,7 @@
 
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
-    const MAX_ACTIVE = 4;
+    const MAX_ACTIVE = 3;
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
 const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
@@ -811,9 +811,9 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
    
     const BONUS_TIME_ADD = 3;
-    const MACRO_CPS_LIMIT = 10; // 초당 10히트 이상은 매크로로 간주
-    const MACRO_STD_THRESHOLD = 10; // 간격 표준편차 10ms 미만 시 의심
-    const MACRO_MEAN_THRESHOLD = 60; // 평균 간격 60ms 이하이면 의심
+    const MACRO_CPS_LIMIT = 14; // 초당 14히트 이상은 매크로로 간주
+    const MACRO_STD_THRESHOLD = 6 // 간격 표준편차 6ms 미만 시 의심
+    const MACRO_MEAN_THRESHOLD = 45; // 평균 간격 45ms 이하이면 의심
     const SPAWN_PATTERNS = [
       [0,1,2],
       [3,4,5],
@@ -1093,7 +1093,7 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 200);
   allowInput = false;
   setTimeout(() => {
     allowInput = true;
-  }, 200);
+  }, 100);
 
   combo = 0;
 }
@@ -1181,7 +1181,7 @@ function hitMole(index) {
       clickTimes.length > MACRO_CPS_LIMIT ||
       (mean <= MACRO_MEAN_THRESHOLD && std <= MACRO_STD_THRESHOLD)
     ) {
-      macroBlockUntil = now + 1500;
+      macroBlockUntil = now + 500;
       registerMiss();
       return;
     }
