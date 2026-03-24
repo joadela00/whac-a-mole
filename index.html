@@ -1289,10 +1289,9 @@ setTimeout(() => {
       paused = false;
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
       setScreen(gameScreen);
-      const order = shuffle([...Array(HOLE_COUNT).keys()]);
-      order.slice(0, MAX_ACTIVE).forEach((i, idx) => {
-        scheduleSpawn(i, 200 + idx * 120);
-      });
+for (let i = 0; i < HOLE_COUNT; i++) {
+  scheduleSpawn(i, 200 + Math.random() * 300);
+}
       order.slice(MAX_ACTIVE).forEach((i, idx) => {
         const base = 1000 + Math.random() * 800;
         scheduleSpawn(i, base + idx * 140);
