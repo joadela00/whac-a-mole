@@ -126,9 +126,10 @@
 }
     
     /* Blur active screen during countdown (restart only) */
-    .app.counting .screen.active {
-      filter: blur(2px);
-    }
+    ..app.counting .screen.active {
+  filter: blur(2px);
+  pointer-events: none;
+}
 
     .start-screen,
     .gameover-screen {
@@ -838,6 +839,7 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     let score = 0;
     let timeLeft = GAME_TIME;
     const holeTimers = Array.from({ length: HOLE_COUNT }, () => ({ spawnTimer: null, hideTimer: null }));
+    const scoreResetTimers = Array.from({ length: HOLE_COUNT }, () => null);
     const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 350 + Math.random() * 600); // 더 느리게
     const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
     const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'mystery' | 'superPlus' | 'superMinus'
@@ -911,6 +913,11 @@ function resetGame() {
     t.spawnTimer = null;
     t.hideTimer = null;
   });
+
+  scoreResetTimers.forEach((t, i) => {
+  clearTimeout(t);
+  scoreResetTimers[i] = null;
+});
 
   holeActive.fill(false);
   holeBonusType.fill('none');
@@ -991,11 +998,13 @@ function hideMole(i, force = false) {
   moleImg.src = ASSETS.idle;
 
   const plus = cell.querySelector('.fx-score');
-  if (plus) {
-    setTimeout(() => {
-      plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
-    }, 560);
-  }
+if (plus) {
+  clearTimeout(scoreResetTimers[i]);
+  scoreResetTimers[i] = setTimeout(() => {
+    plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
+    scoreResetTimers[i] = null;
+  }, 560);
+}
 }
     function scheduleSpawn(i, delay = 300 + Math.random() * 400) {
       if (paused) return;
@@ -1194,7 +1203,8 @@ setTimeout(() => cell.classList.remove('hit'), 120);
 
   
 if (isMystery) {
-  moleImg.style.opacity = '0';
+  moleImg.style.opacity = '';
+  moleImg.src = ASSETS.mystery;
 } else {
   moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
 }
@@ -1296,6 +1306,10 @@ holeTimers.forEach((t, i) => {
       pauseBtn.style.backgroundImage = "url('assets/pa.png')";
       setScreen(gameOverScreen);
       appEl.classList.remove('paused');
+      scoreResetTimers.forEach((t, i) => {
+  clearTimeout(t);
+  scoreResetTimers[i] = null;
+});
     }
 
 function bindActionPress(el, handler) {
