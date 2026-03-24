@@ -903,6 +903,10 @@ let nonMysterySpawnCount = 0;
     }
 
 function resetGame() {
+  clickTimes = [];
+  macroBlockUntil = 0;
+  allowInput = true;
+
   score = 0;
   timeLeft = GAME_TIME;
   combo = 0;
@@ -934,8 +938,6 @@ function resetGame() {
   });
 
   vibeBtn.style.backgroundImage = `url('${vibrateOn ? ASSETS.rr : ASSETS.rrx}')`;
-  preloadAssets();
-
 }
 
     function preloadAssets() {
@@ -951,10 +953,6 @@ function resetGame() {
       if (roll < 0.46) return ASSETS.hand;
       if (roll < 0.69) return ASSETS.whand;
       return ASSETS.idle;
-    }
-
-    function randomSuperSrc() {
-      return Math.random() < 0.5 ? ASSETS.y : ASSETS.th;
     }
 
     function shuffle(arr) {
@@ -1000,15 +998,19 @@ function hideMole(i) {
   holeBonusType[i] = 'none';
 
   const cell = cells[i];
-  cell.classList.remove('up', 'mystery-up');
-
   const moleImg = cell.querySelector('.mole-img');
-  moleImg.style.opacity = '';
-  
-  if (!cell.classList.contains('up')) {
-  moleImg.src = ASSETS.idle;
-}
 
+  cell.classList.remove('up', 'mystery-up');
+  moleImg.style.opacity = '';
+  moleImg.src = ASSETS.idle;
+
+  const plus = cell.querySelector('.fx-score');
+  if (plus) {
+    setTimeout(() => {
+      plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
+    }, 560);
+  }
+}
   const plus = cell.querySelector('.fx-score');
   if (plus) {
     setTimeout(() => {
@@ -1057,8 +1059,8 @@ if (bonus === 'mystery') {
       
       holeBonusType[i] = bonus;
 
-      const moleImg = cell.querySelector('.mole-img');
- if (bonus === 'timer') moleImg.src = ASSETS.time;
+const moleImg = cell.querySelector('.mole-img');
+if (bonus === 'timer') moleImg.src = ASSETS.time;
 else if (bonus === 'mystery') moleImg.src = ASSETS.mystery;
 else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
 else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
@@ -1222,6 +1224,13 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   }
 
   const isCombo = combo >= 2;
+if (isCombo) {
+  appEl.classList.remove('shake');
+  void appEl.offsetWidth;
+  appEl.classList.add('shake');
+  setTimeout(() => appEl.classList.remove('shake'), 180);
+}
+  
   
 if (isMystery) {
   moleImg.style.opacity = '0';
@@ -1418,7 +1427,9 @@ pauseBtn.addEventListener('pointerdown', () => {
   cancelCountdown();
 });
 
-    createBoard();
+createBoard();
+preloadAssets();
+    
   </script>
 </body>
 </html>
