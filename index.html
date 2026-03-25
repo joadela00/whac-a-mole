@@ -1055,7 +1055,7 @@ if (plus) {
       timers.spawnTimer = null;
       const cell = cells[i];
       if (cell.classList.contains('up')) return;
-     const maxActiveNow = fever ? MAX_ACTIVE + 1 : MAX_ACTIVE;
+     const maxActiveNow = fever ? MAX_ACTIVE + 2 : MAX_ACTIVE;
 
 if (activeCount() >= maxActiveNow) {
   scheduleSpawn(i, 200);
