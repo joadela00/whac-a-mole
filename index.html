@@ -439,7 +439,7 @@
       contain: layout;
       will-change: transform;
     }
-
+    .cell-variant-0 { background-position: center center; filter: none; }
     .cell-variant-1 { background-position: 20% 30%; filter: brightness(0.97) saturate(1.05); }
     .cell-variant-2 { background-position: -15% -10%; filter: brightness(1.05) saturate(0.95); }
 
@@ -780,7 +780,6 @@
   </div>
 
   <script>
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const appEl = document.querySelector('.app');
     const startScreen = document.getElementById('startScreen');
     const gameScreen = document.getElementById('gameScreen');
@@ -797,9 +796,6 @@
     const countdownEl = document.getElementById('countdown');
     const cancelHintEl = document.getElementById('cancelHint');
 
-    if (vibeBtn && isiOS) {
-      vibeBtn.style.display = 'none';
-    }
 
     const GAME_TIME = 30;
     const HOLE_COUNT = 9;
