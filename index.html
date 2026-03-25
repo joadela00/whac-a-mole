@@ -811,6 +811,7 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
    
     const BONUS_TIME_ADD = 3;
+    const SPAWN_WATCH_INTERVAL = 550;
     const MACRO_CPS_LIMIT = 14; // 초당 14히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 6 // 간격 표준편차 6ms 미만 시 의심
     const MACRO_MEAN_THRESHOLD = 45; // 평균 간격 45ms 이하이면 의심
@@ -1278,7 +1279,7 @@ plus.classList.add('show');
 
 setTimeout(() => {
   hideMole(index);
-}, 550);
+}, SPAWN_WATCH_INTERVAL);
 
 setTimeout(() => {
   scheduleSpawn(index, 120);
@@ -1393,7 +1394,7 @@ bindActionPress(pauseBtn, () => {
     spawnWatchInterval = setInterval(() => {
       if (!running || paused) return;
       scheduleFreeSlots();
-    }, 300);
+    }, SPAWN_WATCH_INTERVAL);
 
     timerInterval = setInterval(() => {
       if (paused) return;
