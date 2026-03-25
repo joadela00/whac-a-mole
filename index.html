@@ -1235,21 +1235,17 @@ setTimeout(() => cell.classList.remove('hit'), 120);
 
   holeActive[index] = false;
 
-  if (!isTimer && !isMystery) {
-  if (fever) {
-    combo += 1; // 👈 피버 중엔 끊김 없음
-  } else {
-    combo = (now - lastHitAt > 1100) ? 1 : combo + 1;
-  }
+if (isTimer || isMystery) {
+  // 콤보 유지 (아무것도 안함)
 } else {
-  combo = 0;
+  combo = (now - lastHitAt > 1100) ? 1 : combo + 1;
 }
-
   const isCombo2 = combo === 2;
   const isCombo3 = combo >= 3;;
-if (combo >= 8) {
+if (combo >= 6) {
   startFever();
 }
+
   
 if (isMystery) {
   moleImg.style.opacity = '';
