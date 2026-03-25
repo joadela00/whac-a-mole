@@ -1100,11 +1100,10 @@ setTimeout(() => document.body.classList.remove('miss-flash'), 0);
 
     function startCountdown(callback, useBlur = false, cancelable = false) {
       if (countingDown || running) return;
-      countingDown = true;
-      allowCountdownCancel = cancelable;
-      countdownCancelArmed = false;
-      if (allowCountdownCancel) setTimeout(() => countdownCancelArmed = true, 60);
-      if (useBlur) appEl.classList.add('counting');
+countingDown = true;
+allowCountdownCancel = cancelable;
+countdownCancelArmed = allowCountdownCancel; 
+            if (useBlur) appEl.classList.add('counting');
       let n = 3;
       countdownEl.classList.remove('hidden');
       if (cancelHintEl) {
