@@ -870,7 +870,9 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     let countdownCancelArmed = false;
     let mysterySpawnedThisGame = false;
 let nonMysterySpawnCount = 0;
-
+let fever = false;
+let feverTimer = null;
+    
     const cells = [];
 
     function createBoard() {
@@ -911,7 +913,12 @@ function resetGame() {
   combo = 0;
   mysterySpawnedThisGame = false;
   nonMysterySpawnCount = 0;
-
+  
+fever = false;
+clearTimeout(feverTimer);
+feverTimer = null;
+document.body.style.filter = '';
+  
   scoreValue.textContent = score;
   timeValue.textContent = `${timeLeft}초`;
 
@@ -944,7 +951,21 @@ function resetGame() {
   t.hideTimer = null;
 });
 }
+    
+function startFever() {
+  if (fever) return;
 
+  fever = true;
+
+  // 🔥 효과 (원하면 색도 바꿀 수 있음)
+  document.body.style.filter = 'brightness(1.15) saturate(1.2)';
+
+  clearTimeout(feverTimer);
+  feverTimer = setTimeout(() => {
+    fever = false;
+    document.body.style.filter = '';
+  }, 3000); // 3초
+}
     function preloadAssets() {
       Object.values(ASSETS).forEach(src => {
         const img = new Image();
@@ -986,7 +1007,10 @@ function resetGame() {
       for (let i = 0; i < HOLE_COUNT; i += 1) {
         if (!holeActive[i] && !holeTimers[i].spawnTimer) free.push(i);
       }
-      const need = Math.max(0, MAX_ACTIVE - activeCount());
+
+const maxActiveNow = fever ? MAX_ACTIVE + 2 : MAX_ACTIVE;
+const need = Math.max(0, maxActiveNow - activeCount());
+      
       shuffle(free).slice(0, need).forEach(i => {
         scheduleSpawn(i, 300 + Math.random() * 600);
       });
@@ -1031,10 +1055,12 @@ if (plus) {
       timers.spawnTimer = null;
       const cell = cells[i];
       if (cell.classList.contains('up')) return;
-      if (activeCount() >= MAX_ACTIVE) {
-        scheduleSpawn(i, 200); 
-        return;
-      }
+     const maxActiveNow = fever ? MAX_ACTIVE + 1 : MAX_ACTIVE;
+
+if (activeCount() >= maxActiveNow) {
+  scheduleSpawn(i, 200);
+  return;
+}
 const roll = Math.random();
 const shouldForceMystery = !mysterySpawnedThisGame && nonMysterySpawnCount >= GUARANTEED_MYSTERY_AFTER_SPAWNS;
 
@@ -1073,8 +1099,7 @@ cell.classList.add('up');
 
   const speedMultiplier = Math.max(0.4, 1 - score / 500);
 
-const visibleFor = Math.max(
-  500,
+const visibleFor = Math.max(420,
   (holeSpeed[i] + Math.random() * 320) * speedMultiplier
 );
       timers.hideTimer = setTimeout(() => {
@@ -1211,13 +1236,20 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   holeActive[index] = false;
 
   if (!isTimer && !isMystery) {
-    combo = (now - lastHitAt > 900) ? 1 : Math.min(combo + 1, 3);
-  } else {   combo = 0; // 👈 이거 반드시 필요
+  if (fever) {
+    combo += 1; // 👈 피버 중엔 끊김 없음
+  } else {
+    combo = (now - lastHitAt > 1100) ? 1 : combo + 1;
   }
+} else {
+  combo = 0;
+}
 
   const isCombo2 = combo === 2;
   const isCombo3 = combo >= 3;;
-
+if (combo >= 8) {
+  startFever();
+}
   
 if (isMystery) {
   moleImg.style.opacity = '';
@@ -1263,13 +1295,16 @@ if (isTimer) {
 plus.classList.add('show');
   
 
-  const add =
-    isTimer ? 0 :
-    isMystery ? reward.scoreDelta :
-    isPlus ? 5 :
-    isMinus ? -5 :
-    (isCombo3 ? 3 : isCombo2 ? 2 : 1);
+let add =
+  isTimer ? 0 :
+  isMystery ? reward.scoreDelta :
+  isPlus ? 5 :
+  isMinus ? -3 :
+  (isCombo3 ? 3 : isCombo2 ? 2 : 1);
 
+if (fever && add > 0) {
+  add *= 2;
+}
   score += add;
   scoreValue.textContent = score;
   lastHitAt = now;
@@ -1446,6 +1481,7 @@ bindActionPress(pauseBtn, () => {
   if (isButton) return;
 
   cancelCountdown();
+   allowInput = true;
 });
 
 createBoard();
