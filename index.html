@@ -249,6 +249,28 @@
       100%  { transform: translateX(-50%) translateY(9px);   opacity: 0; } /* 쉬는 구간 */
     }
 
+.fever-img {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  width: 260px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.fever-img.show {
+  animation: feverImgPop 0.6s ease-out forwards;
+}
+
+   
+@keyframes feverImgPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
     .pixel-btn {
       width: min(280px, 64vw);
       height: 86px;
@@ -745,6 +767,7 @@
 </head>
 <body>
   <div class="app">
+    <img id="feverImg" src="assets/fever.png" class="fever-img hidden">
     <div id="countdown" class="countdown hidden">3</div>
     <div id="cancelHint" class="cancel-hint hidden">취소하려면 아무 곳이나 터치</div>
     <section class="screen start-screen active" id="startScreen">
@@ -780,6 +803,7 @@
   </div>
 
   <script>
+    const feverImg = document.getElementById('feverImg');
     const appEl = document.querySelector('.app');
     const startScreen = document.getElementById('startScreen');
     const gameScreen = document.getElementById('gameScreen');
@@ -965,6 +989,15 @@ function startFever() {
     fever = false;
     document.body.style.filter = '';
   }, 3000); // 3초
+
+  feverImg.classList.remove('hidden');
+feverImg.classList.add('show');
+
+setTimeout(() => {
+  feverImg.classList.remove('show');
+  feverImg.classList.add('hidden');
+}, 600);
+  
 }
     function preloadAssets() {
       Object.values(ASSETS).forEach(src => {
