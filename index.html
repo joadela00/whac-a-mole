@@ -812,6 +812,8 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
    
     const BONUS_TIME_ADD = 3;
     const SPAWN_WATCH_INTERVAL = 550;
+    const HIT_HIDE_DELAY = 550;
+    const HIT_RESPAWN_DELAY = 650;
     const MACRO_CPS_LIMIT = 14; // 초당 14히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 6 // 간격 표준편차 6ms 미만 시 의심
     const MACRO_MEAN_THRESHOLD = 45; // 평균 간격 45ms 이하이면 의심
@@ -1279,11 +1281,11 @@ plus.classList.add('show');
 
 setTimeout(() => {
   hideMole(index);
-}, SPAWN_WATCH_INTERVAL);
+}, HIT_HIDE_DELAY);
 
 setTimeout(() => {
   scheduleSpawn(index, 120);
-}, 650);
+}, HIT_RESPAWN_DELAY);
 }
     function startGame() {
       appEl.classList.remove('paused');
@@ -1299,7 +1301,7 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       spawnWatchInterval = setInterval(() => {
         if (!running) return;
         scheduleFreeSlots();
-      }, 550);
+      }, SPAWN_WATCH_INTERVAL);
 
       timerInterval = setInterval(() => {
         timeLeft -= 1;
