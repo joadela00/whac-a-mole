@@ -17,17 +17,17 @@
   <link rel="preload" as="image" href="assets/rrx.png">
   <link rel="preload" as="image" href="assets/char_idle.png">
   <link rel="preload" as="image" href="assets/char_time.png">
-  <link rel="preload" as="image" href="assets/char_th.png">
-  <link rel="preload" as="image" href="assets/char_y.png">
-  <link rel="preload" as="image" href="assets/char_thx.png">
-  <link rel="preload" as="image" href="assets/char_yx.png">
+  <link rel="preload" as="image" href="assets/char_p.png">
+  <link rel="preload" as="image" href="assets/char_r.png">
+  <link rel="preload" as="image" href="assets/char_m.png">
+  <link rel="preload" as="image" href="assets/char_px.png">
+  <link rel="preload" as="image" href="assets/char_rx.png">
+  <link rel="preload" as="image" href="assets/char_mx.png">
   <link rel="preload" as="image" href="assets/effect_fire.png">
   <link rel="preload" as="image" href="assets/effect_fire2.png">
   <link rel="preload" as="image" href="assets/effect_fire3.png">
   <link rel="preload" as="image" href="assets/score_plus.png">
   <link rel="preload" as="image" href="assets/score_plus2.png">
-  <link rel="preload" as="image" href="assets/score_plus5.png">
-  <link rel="preload" as="image" href="assets/score_minus5.png">
   <link rel="preload" as="image" href="assets/fi_scor.png">
   <link rel="preload" as="image" href="assets/over.png">
   <link rel="preload" as="image" href="assets/3q.png">
@@ -854,18 +854,15 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
       time: 'assets/char_time.png',
       mystery: 'assets/3q.png',
       plus3: 'assets/score_plus3.png',
-      y: 'assets/char_y.png',
-      th: 'assets/char_th.png',
-      thx: 'assets/char_thx.png',
+      penaltyChars: ['assets/char_p.png', 'assets/char_r.png', 'assets/char_m.png'],
+      penaltyHitChars: ['assets/char_px.png', 'assets/char_rx.png', 'assets/char_mx.png'],
       hit: 'assets/char_hit.png',
-      yx: 'assets/char_yx.png',
       fire: 'assets/effect_fire.png',
       fire2: 'assets/effect_fire2.png',
       fire3: 'assets/effect_fire3.png',
       plus: 'assets/score_plus.png',
       plus2: 'assets/score_plus2.png',
       plus5: 'assets/score_plus5.png',
-      minus5: 'assets/score_minus5.png',
       minus3: 'assets/score_minus3.png',
       rr: 'assets/rr.png',
       rrx: 'assets/rrx.png',
@@ -877,7 +874,8 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const scoreResetTimers = Array.from({ length: HOLE_COUNT }, () => null);
     const holeSpeed = Array.from({ length: HOLE_COUNT }, () => 350 + Math.random() * 600); // 더 느리게
     const holeActive = Array.from({ length: HOLE_COUNT }, () => false);
-    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'mystery' | 'superPlus' | 'superMinus'
+    const holeBonusType = Array.from({ length: HOLE_COUNT }, () => 'none'); // 'none' | 'timer' | 'mystery' | 'penalty'
+    const holePenaltyVariant = Array.from({ length: HOLE_COUNT }, () => -1);
     let combo = 0;
     let lastHitAt = 0;
     let allowInput = true;
@@ -957,6 +955,7 @@ document.body.style.filter = '';
 
   holeActive.fill(false);
   holeBonusType.fill('none');
+  holePenaltyVariant.fill(-1);
   lastHitAt = 0;
 
   cells.forEach(cell => {
@@ -1014,6 +1013,10 @@ setTimeout(() => {
       return ASSETS.idle;
     }
 
+    function randomPenaltyVariant() {
+      return Math.floor(Math.random() * ASSETS.penaltyChars.length);
+    }
+
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1058,6 +1061,7 @@ function hideMole(i, force = false) {
 
   holeActive[i] = false;
   holeBonusType[i] = 'none';
+  holePenaltyVariant[i] = -1;
 
   const cell = cells[i];
   const moleImg = cell.querySelector('.mole-img');
@@ -1106,7 +1110,7 @@ if (shouldForceMystery) {
 } else if (roll < BONUS_TIMER_CHANCE + BONUS_MYSTERY_CHANCE) {
   bonus = 'mystery';
 } else if (roll < BONUS_TIMER_CHANCE + BONUS_MYSTERY_CHANCE + BONUS_SUPER_CHANCE) {
-  bonus = Math.random() < SUPER_MINUS_RATIO ? 'superMinus' : 'superPlus';
+  bonus = 'penalty';
 }
 
 if (bonus === 'mystery') {
@@ -1121,9 +1125,14 @@ if (bonus === 'mystery') {
 const moleImg = cell.querySelector('.mole-img');
 if (bonus === 'timer') moleImg.src = ASSETS.time;
 else if (bonus === 'mystery') moleImg.src = ASSETS.mystery;
-else if (bonus === 'superPlus') moleImg.src = ASSETS.th;
-else if (bonus === 'superMinus') moleImg.src = ASSETS.y;
-else moleImg.src = randomMoleSrc();
+else if (bonus === 'penalty') {
+  const variant = randomPenaltyVariant();
+  holePenaltyVariant[i] = variant;
+  moleImg.src = ASSETS.penaltyChars[variant];
+} else {
+  holePenaltyVariant[i] = -1;
+  moleImg.src = randomMoleSrc();
+}
 
       cell.classList.toggle('mystery-up', bonus === 'mystery');
 cell.classList.add('up');
@@ -1261,8 +1270,8 @@ setTimeout(() => cell.classList.remove('hit'), 120);
 
   const isTimer = holeBonusType[index] === 'timer';
   const isMystery = holeBonusType[index] === 'mystery';
-  const isPlus = holeBonusType[index] === 'superPlus';
-  const isMinus = holeBonusType[index] === 'superMinus';
+  const isPenalty = holeBonusType[index] === 'penalty';
+  const penaltyVariant = holePenaltyVariant[index];
 
   const reward = isMystery ? resolveMysteryReward() : null;
 
@@ -1283,8 +1292,10 @@ if (combo >= 6) {
 if (isMystery) {
   moleImg.style.opacity = '';
   moleImg.src = ASSETS.mystery;
+} else if (isPenalty && penaltyVariant >= 0) {
+  moleImg.src = ASSETS.penaltyHitChars[penaltyVariant];
 } else {
-  moleImg.src = isPlus ? ASSETS.thx : isMinus ? ASSETS.yx : ASSETS.hit;
+  moleImg.src = ASSETS.hit;
 }
 
 pop.classList.remove('show');
@@ -1297,7 +1308,7 @@ if (!isTimer && !isMystery) pop.classList.add('show');
   if (!isTimer && !isMystery) {
   const popImg = pop.querySelector('img');
   if (popImg) {
-    popImg.src = (isPlus || isMinus)
+    popImg.src = isPenalty
       ? ASSETS.fire3
       : (isCombo3 ? ASSETS.fire2 : ASSETS.fire);
   }
@@ -1308,10 +1319,8 @@ if (isTimer) {
   plus.innerHTML = `<span class="bonus-label bonus-timer">+3s</span>`;
 } else if (isMystery) {
   plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
-} else if (isPlus) {
-  plus.innerHTML = `<img src="${ASSETS.plus5}" alt="+5">`;
-} else if (isMinus) {
-  plus.innerHTML = `<img src="${ASSETS.minus5}" alt="-5">`;
+} else if (isPenalty) {
+  plus.innerHTML = `<img src="${ASSETS.minus3}" alt="-3">`;
 } else if (isCombo3) {
   plus.innerHTML = `<img src="${ASSETS.plus3}" alt="+3">`;
 } else if (isCombo2) {
@@ -1327,8 +1336,7 @@ plus.classList.add('show');
 let add =
   isTimer ? 0 :
   isMystery ? reward.scoreDelta :
-  isPlus ? 5 :
-  isMinus ? -3 :
+  isPenalty ? -3 :
   (isCombo3 ? 3 : isCombo2 ? 2 : 1);
 
 if (fever && add > 0) {
