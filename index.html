@@ -275,11 +275,17 @@
 
 .fever-img {
   position: absolute;
-  top: calc(30% + env(safe-area-inset-top));
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.7);
+  top: calc(32% + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+
+  width: min(320px, 72vw);
+  
+  transform: scale(0.7);
 }
 
+    
 .fever-img.show {
  opacity: 1;
  animation: feverImgFloat 1.8s ease-in-out infinite;
