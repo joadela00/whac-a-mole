@@ -1342,7 +1342,7 @@ let add =
 if (fever && add > 0) {
   add *= 2;
 }
-  score += add;
+  score = Math.max(0, score + add);
   scoreValue.textContent = score;
   lastHitAt = now;
 
