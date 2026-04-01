@@ -274,15 +274,14 @@
     }
 
 .fever-img {
-  position: absolute;
+  position: fixed;   /* 🔥 핵심 변경 */
+
   top: calc(32% + env(safe-area-inset-top));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  left: 50%;
+
+  transform: translateX(-50%);
 
   width: min(180px, 55vw);
-
-  transform: scale(1);
 
   z-index: 1000;
   pointer-events: none;
