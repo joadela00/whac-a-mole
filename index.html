@@ -275,7 +275,7 @@
 
 .fever-img {
   position: absolute;
-  top: 25%;
+  top: 25%; /피버이미지높이/
   left: 50%;
   transform: translate(-50%, -50%) scale(0.7);
   width: 320px;
@@ -878,8 +878,8 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
       time: 'assets/char_time.png',
       mystery: 'assets/3q.png',
       plus3: 'assets/score_plus3.png',
-      penaltyChars: ['assets/char_p.png', 'assets/char_r.png', 'assets/char_m.png'],
-      penaltyHitChars: ['assets/char_px.png', 'assets/char_rx.png', 'assets/char_mx.png'],
+      penaltyChars: ['assets/char_p.png', 'assets/char_r.png', 'assets/char_m.png', 'assets/char_y.png'],
+      penaltyHitChars: ['assets/char_px.png', 'assets/char_rx.png', 'assets/char_mx.png', 'assets/char_yx.png'],
       hit: 'assets/char_hit.png',
       fire: 'assets/effect_fire.png',
       fire2: 'assets/effect_fire2.png',
@@ -888,6 +888,7 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
       plus2: 'assets/score_plus2.png',
       plus5: 'assets/score_plus5.png',
       minus3: 'assets/score_minus3.png',
+      minus5: 'assets/score_minus5.png',
       rr: 'assets/rr.png',
       rrx: 'assets/rrx.png',
     };
@@ -1298,6 +1299,7 @@ setTimeout(() => cell.classList.remove('hit'), 120);
   const isMystery = holeBonusType[index] === 'mystery';
   const isPenalty = holeBonusType[index] === 'penalty';
   const penaltyVariant = holePenaltyVariant[index];
+  const isHeavyPenalty = isPenalty && penaltyVariant === ASSETS.penaltyChars.length - 1; 
 
   const reward = isMystery ? resolveMysteryReward() : null;
 
@@ -1346,7 +1348,7 @@ if (isTimer) {
 } else if (isMystery) {
   plus.innerHTML = `<img src="${reward.imageSrc}" alt="${reward.imageAlt}">`;
 } else if (isPenalty) {
-  plus.innerHTML = `<img src="${ASSETS.minus3}" alt="-3">`;
+   plus.innerHTML = `<img src="${isHeavyPenalty ? ASSETS.minus5 : ASSETS.minus3}" alt="${isHeavyPenalty ? '-5' : '-3'}">`;
 } else if (isCombo3) {
   plus.innerHTML = `<img src="${ASSETS.plus3}" alt="+3">`;
 } else if (isCombo2) {
@@ -1362,7 +1364,7 @@ plus.classList.add('show');
 let add =
   isTimer ? 0 :
   isMystery ? reward.scoreDelta :
-  isPenalty ? -3 :
+  isPenalty ? (isHeavyPenalty ? -5 : -3) :
   (isCombo3 ? 3 : isCombo2 ? 2 : 1);
 
 if (fever && add > 0) {
