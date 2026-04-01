@@ -851,7 +851,7 @@
     const MAX_ACTIVE = 2;
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
-const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
+const GUARANTEED_MYSTERY_AFTER_SPAWNS = 6;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
    
@@ -859,9 +859,9 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 10;
     const SPAWN_WATCH_INTERVAL = 550;
     const HIT_HIDE_DELAY = 550;
     const HIT_RESPAWN_DELAY = 650;
-    const MACRO_CPS_LIMIT = 14; // 초당 14히트 이상은 매크로로 간주
+    const MACRO_CPS_LIMIT = 18; // 초당 18히트 이상은 매크로로 간주
     const MACRO_STD_THRESHOLD = 6 // 간격 표준편차 6ms 미만 시 의심
-    const MACRO_MEAN_THRESHOLD = 45; // 평균 간격 45ms 이하이면 의심
+    const MACRO_MEAN_THRESHOLD = 35; // 평균 간격 35ms 이하이면 의심
     const SPAWN_PATTERNS = [
       [0,1,2],
       [3,4,5],
@@ -1059,20 +1059,26 @@ feverImg.classList.add('show');
 
     function scheduleFreeSlots() {
       if (Math.random() < 0.2) {
-        const pattern = SPAWN_PATTERNS[Math.floor(Math.random() * SPAWN_PATTERNS.length)];
-        pattern.forEach((i, idx) => {
-          if (!holeActive[i] && !holeTimers[i].spawnTimer) {
-            scheduleSpawn(i, 200 + idx * 180);
-          }
-        });
-        return;
-      }
+  const pattern = SPAWN_PATTERNS[Math.floor(Math.random() * SPAWN_PATTERNS.length)];
+  const maxActiveNow = fever ? MAX_ACTIVE + 2 : MAX_ACTIVE;
+  const need = Math.max(0, maxActiveNow - activeCount());
+
+  if (need > 0) {
+    pattern
+      .filter(i => !holeActive[i] && !holeTimers[i].spawnTimer)
+      .slice(0, need)
+      .forEach((i, idx) => {
+        scheduleSpawn(i, 200 + idx * 180);
+      });
+  }
+  return;
+}
       const free = [];
       for (let i = 0; i < HOLE_COUNT; i += 1) {
         if (!holeActive[i] && !holeTimers[i].spawnTimer) free.push(i);
       }
 
-const maxActiveNow = fever ? MAX_ACTIVE + 2 : MAX_ACTIVE;
+const maxActiveNow = fever ? MAX_ACTIVE + 1 : MAX_ACTIVE;
 const need = Math.max(0, maxActiveNow - activeCount());
       
       shuffle(free).slice(0, need).forEach(i => {
@@ -1098,10 +1104,17 @@ function hideMole(i, force = false) {
   moleImg.style.opacity = '';
   moleImg.src = ASSETS.idle;
 
-  const plus = cell.querySelector('.fx-score');
+const plus = cell.querySelector('.fx-score');
 if (plus) {
   clearTimeout(scoreResetTimers[i]);
   scoreResetTimers[i] = setTimeout(() => {
+    // 이미 다른 연출이 다시 들어간 상태면 덮어쓰지 않음
+    if (cell.classList.contains('up')) {
+      scoreResetTimers[i] = null;
+      return;
+    }
+
+    plus.classList.remove('show');
     plus.innerHTML = `<img src="${ASSETS.plus}" alt="+1">`;
     scoreResetTimers[i] = null;
   }, 560);
@@ -1313,7 +1326,7 @@ if (isTimer || isMystery) {
 }
   const isCombo2 = combo === 2;
   const isCombo3 = combo >= 3;;
-if (combo >= 6) {
+if (combo === 6) {
   startFever();
 }
 
@@ -1547,7 +1560,7 @@ bindActionPress(pauseBtn, () => {
   if (isButton) return;
 
   cancelCountdown();
-   allowInput = true;
+   allowInput = false;
 });
 
 createBoard();
