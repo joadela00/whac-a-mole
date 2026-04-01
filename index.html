@@ -280,15 +280,14 @@
   right: 0;
   margin: 0 auto;
 
-  width: min(180px, 55vw);   /* 🔥 이게 핵심 */
-  
-  transform: scale(1);       /* scale 제거 또는 1로 */
-  
+  width: min(180px, 55vw);
+
+  transform: scale(1);
+
   z-index: 1000;
   pointer-events: none;
   opacity: 0;
 }
-
     
 .fever-img.show {
  opacity: 1;
@@ -297,10 +296,10 @@
 
    
 @keyframes feverImgFloat {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.06); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
-
+    
     .pixel-btn {
       width: min(280px, 64vw);
       height: 86px;
