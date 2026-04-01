@@ -280,9 +280,13 @@
   right: 0;
   margin: 0 auto;
 
-  width: min(320px, 72vw);
+  width: min(180px, 55vw);   /* 🔥 이게 핵심 */
   
-  transform: scale(0.7);
+  transform: scale(1);       /* scale 제거 또는 1로 */
+  
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
 }
 
     
