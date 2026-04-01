@@ -274,15 +274,10 @@
     }
 
 .fever-img {
- position: absolute;
-  top: 28%; /피버이미지높이/
+  position: absolute;
+  top: calc(30% + env(safe-area-inset-top));
   left: 50%;
-  transform-origin: center center;
   transform: translate(-50%, -50%) scale(0.7);
-  width: min(320px, 72vw);
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0;
 }
 
 .fever-img.show {
