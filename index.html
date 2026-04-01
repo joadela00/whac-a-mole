@@ -275,24 +275,24 @@
 
 .fever-img {
   position: absolute;
-  top: 38%;
+  top: 30%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.7);
-  width: 260px;
+  width: 320px;
   z-index: 1000;
   pointer-events: none;
   opacity: 0;
 }
 
 .fever-img.show {
-  animation: feverImgPop 1.0s ease-out forwards;
+ opacity: 1;
+ animation: feverImgFloat 1.8s ease-in-out infinite;
 }
 
    
-@keyframes feverImgPop {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
-  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+@keyframes feverImgFloat {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.06); }
 }
 
     .pixel-btn {
@@ -965,6 +965,8 @@ clearTimeout(feverTimer);
 feverTimer = null;
 document.body.style.filter = '';
   document.body.classList.remove('fever-active');
+  feverImg.classList.remove('show');
+feverImg.classList.add('hidden');
   
   scoreValue.textContent = score;
   timeValue.textContent = `${timeLeft}초`;
@@ -1014,16 +1016,13 @@ function startFever() {
     fever = false;
     document.body.style.filter = '';
   document.body.classList.remove('fever-active');
-  }, 5000); // 10초
+     feverImg.classList.remove('show');
+    feverImg.classList.add('hidden');
+  }, 5000); // 5초
 
   feverImg.classList.remove('hidden');
 feverImg.classList.add('show');
 
-setTimeout(() => {
-  feverImg.classList.remove('show');
-  feverImg.classList.add('hidden');
-}, 600);
-  
 }
     function preloadAssets() {
       Object.values(ASSETS).forEach(src => {
@@ -1311,7 +1310,7 @@ if (isTimer || isMystery) {
 }
   const isCombo2 = combo === 2;
   const isCombo3 = combo >= 3;;
-if (combo >= 3) {
+if (combo >= 6) {
   startFever();
 }
 
