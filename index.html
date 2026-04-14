@@ -862,6 +862,7 @@
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
 const GUARANTEED_MYSTERY_AFTER_SPAWNS = 6;
+const FEVER_DURATION_MS = 5000;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
    
@@ -1526,6 +1527,17 @@ bindActionPress(pauseBtn, () => {
       t.hideTimer = null;
     });
 
+    if (fever && feverTimer) {
+      const elapsed = Date.now() - feverStartedAt;
+      feverRemainingMs = Math.max(0, feverRemainingMs - elapsed);
+      clearTimeout(feverTimer);
+      feverTimer = null;
+      feverStartedAt = 0;
+      if (feverRemainingMs <= 0) {
+        stopFever();
+      }
+    }
+
     pauseBtn.style.backgroundImage = "url('assets/ja.png')";
   } else {
     appEl.classList.remove('paused');
@@ -1543,6 +1555,12 @@ bindActionPress(pauseBtn, () => {
       timeValue.textContent = `${timeLeft}초`;
       if (timeLeft <= 0) endGame();
     }, 1000);
+
+    if (fever && feverRemainingMs > 0 && !feverTimer) {
+      armFeverTimer(feverRemainingMs);
+    } else if (fever && feverRemainingMs <= 0) {
+      stopFever();
+    }
   }
 });
 
