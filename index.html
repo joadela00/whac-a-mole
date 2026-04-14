@@ -928,8 +928,9 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 6;
     let countdownCancelArmed = false;
     let mysterySpawnedThisGame = false;
 let nonMysterySpawnCount = 0;
-let fever = false;
-let feverTimer = null;
+    let fever = false;
+    let feverTimer = null;
+    let missFlashTimer = null;
     
     const cells = [];
 
@@ -965,6 +966,9 @@ function resetGame() {
   clickTimes = [];
   macroBlockUntil = 0;
   allowInput = true;
+  clearTimeout(missFlashTimer);
+  missFlashTimer = null;
+  document.body.classList.remove('miss-flash');
 
   score = 0;
   timeLeft = GAME_TIME;
@@ -1205,7 +1209,11 @@ const visibleFor = Math.max(420,
   if (!allowInput || paused) return;
 
   document.body.classList.add('miss-flash');
-setTimeout(() => document.body.classList.remove('miss-flash'), 0);
+  clearTimeout(missFlashTimer);
+  missFlashTimer = setTimeout(() => {
+    document.body.classList.remove('miss-flash');
+    missFlashTimer = null;
+  }, 120);
 
   allowInput = false;
   setTimeout(() => {
