@@ -1455,9 +1455,6 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
       stopFever();
-      clearTimeout(missFlashTimer);
-      missFlashTimer = null;
-      document.body.classList.remove('miss-flash');
 holeTimers.forEach((t, i) => {
   clearTimeout(t.spawnTimer);
   clearTimeout(t.hideTimer);
