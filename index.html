@@ -931,8 +931,6 @@ const FEVER_DURATION_MS = 5000;
 let nonMysterySpawnCount = 0;
     let fever = false;
     let feverTimer = null;
-    let feverStartedAt = 0;
-    let feverRemainingMs = 0;
     let missFlashTimer = null;
     
     const cells = [];
@@ -1019,21 +1017,10 @@ function stopFever() {
   fever = false;
   clearTimeout(feverTimer);
   feverTimer = null;
-  feverStartedAt = 0;
-  feverRemainingMs = 0;
   document.body.style.filter = '';
   document.body.classList.remove('fever-active');
   feverImg.classList.remove('show');
   feverImg.classList.add('hidden');
-}
-
-function armFeverTimer(durationMs) {
-  clearTimeout(feverTimer);
-  feverRemainingMs = Math.max(0, durationMs);
-  feverStartedAt = Date.now();
-  feverTimer = setTimeout(() => {
-    stopFever();
-  }, feverRemainingMs);
 }
     
 function startFever() {
@@ -1045,7 +1032,10 @@ function startFever() {
   document.body.style.filter = 'brightness(1.1) saturate(1.15)';
   document.body.classList.add('fever-active');
 
-  armFeverTimer(FEVER_DURATION_MS);
+  clearTimeout(feverTimer);
+  feverTimer = setTimeout(() => {
+    stopFever();
+  }, 5000); // 5초
 
   feverImg.classList.remove('hidden');
 feverImg.classList.add('show');
@@ -1466,9 +1456,6 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
       stopFever();
-      clearTimeout(missFlashTimer);
-      missFlashTimer = null;
-      document.body.classList.remove('miss-flash');
 holeTimers.forEach((t, i) => {
   clearTimeout(t.spawnTimer);
   clearTimeout(t.hideTimer);
