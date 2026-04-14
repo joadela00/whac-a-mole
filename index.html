@@ -972,13 +972,7 @@ function resetGame() {
   mysterySpawnedThisGame = false;
   nonMysterySpawnCount = 0;
   
-fever = false;
-clearTimeout(feverTimer);
-feverTimer = null;
-document.body.style.filter = '';
-  document.body.classList.remove('fever-active');
-  feverImg.classList.remove('show');
-feverImg.classList.add('hidden');
+stopFever();
   
   scoreValue.textContent = score;
   timeValue.textContent = `${timeLeft}초`;
@@ -1013,6 +1007,16 @@ feverImg.classList.add('hidden');
   t.hideTimer = null;
 });
 }
+
+function stopFever() {
+  fever = false;
+  clearTimeout(feverTimer);
+  feverTimer = null;
+  document.body.style.filter = '';
+  document.body.classList.remove('fever-active');
+  feverImg.classList.remove('show');
+  feverImg.classList.add('hidden');
+}
     
 function startFever() {
   if (fever) return;
@@ -1025,11 +1029,7 @@ function startFever() {
 
   clearTimeout(feverTimer);
   feverTimer = setTimeout(() => {
-    fever = false;
-    document.body.style.filter = '';
-  document.body.classList.remove('fever-active');
-     feverImg.classList.remove('show');
-    feverImg.classList.add('hidden');
+    stopFever();
   }, 5000); // 5초
 
   feverImg.classList.remove('hidden');
@@ -1446,6 +1446,7 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       running = false;
       clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
+      stopFever();
 holeTimers.forEach((t, i) => {
   clearTimeout(t.spawnTimer);
   clearTimeout(t.hideTimer);
