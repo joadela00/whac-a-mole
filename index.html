@@ -1546,6 +1546,9 @@ bindActionPress(pauseBtn, () => {
       clearTimeout(feverTimer);
       feverTimer = null;
       feverStartedAt = 0;
+      if (feverRemainingMs <= 0) {
+        stopFever();
+      }
     }
 
     pauseBtn.style.backgroundImage = "url('assets/ja.png')";
@@ -1568,6 +1571,8 @@ bindActionPress(pauseBtn, () => {
 
     if (fever && feverRemainingMs > 0 && !feverTimer) {
       armFeverTimer(feverRemainingMs);
+    } else if (fever && feverRemainingMs <= 0) {
+      stopFever();
     }
   }
 });
