@@ -862,6 +862,7 @@
     const BONUS_TIMER_CHANCE = 0.015;
     const BONUS_MYSTERY_CHANCE = 0.06;
 const GUARANTEED_MYSTERY_AFTER_SPAWNS = 6;
+const FEVER_DURATION_MS = 5000;
     const BONUS_SUPER_CHANCE = 0.08;
     const SUPER_MINUS_RATIO = 0.5; // super 중 50%는 감점 두더지
    
@@ -928,8 +929,11 @@ const GUARANTEED_MYSTERY_AFTER_SPAWNS = 6;
     let countdownCancelArmed = false;
     let mysterySpawnedThisGame = false;
 let nonMysterySpawnCount = 0;
-let fever = false;
-let feverTimer = null;
+    let fever = false;
+    let feverTimer = null;
+    let feverStartedAt = 0;
+    let feverRemainingMs = 0;
+    let missFlashTimer = null;
     
     const cells = [];
 
@@ -965,6 +969,9 @@ function resetGame() {
   clickTimes = [];
   macroBlockUntil = 0;
   allowInput = true;
+  clearTimeout(missFlashTimer);
+  missFlashTimer = null;
+  document.body.classList.remove('miss-flash');
 
   score = 0;
   timeLeft = GAME_TIME;
@@ -972,13 +979,7 @@ function resetGame() {
   mysterySpawnedThisGame = false;
   nonMysterySpawnCount = 0;
   
-fever = false;
-clearTimeout(feverTimer);
-feverTimer = null;
-document.body.style.filter = '';
-  document.body.classList.remove('fever-active');
-  feverImg.classList.remove('show');
-feverImg.classList.add('hidden');
+stopFever();
   
   scoreValue.textContent = score;
   timeValue.textContent = `${timeLeft}초`;
@@ -1013,6 +1014,27 @@ feverImg.classList.add('hidden');
   t.hideTimer = null;
 });
 }
+
+function stopFever() {
+  fever = false;
+  clearTimeout(feverTimer);
+  feverTimer = null;
+  feverStartedAt = 0;
+  feverRemainingMs = 0;
+  document.body.style.filter = '';
+  document.body.classList.remove('fever-active');
+  feverImg.classList.remove('show');
+  feverImg.classList.add('hidden');
+}
+
+function armFeverTimer(durationMs) {
+  clearTimeout(feverTimer);
+  feverRemainingMs = Math.max(0, durationMs);
+  feverStartedAt = Date.now();
+  feverTimer = setTimeout(() => {
+    stopFever();
+  }, feverRemainingMs);
+}
     
 function startFever() {
   if (fever) return;
@@ -1023,14 +1045,7 @@ function startFever() {
   document.body.style.filter = 'brightness(1.1) saturate(1.15)';
   document.body.classList.add('fever-active');
 
-  clearTimeout(feverTimer);
-  feverTimer = setTimeout(() => {
-    fever = false;
-    document.body.style.filter = '';
-  document.body.classList.remove('fever-active');
-     feverImg.classList.remove('show');
-    feverImg.classList.add('hidden');
-  }, 5000); // 5초
+  armFeverTimer(FEVER_DURATION_MS);
 
   feverImg.classList.remove('hidden');
 feverImg.classList.add('show');
@@ -1205,7 +1220,11 @@ const visibleFor = Math.max(420,
   if (!allowInput || paused) return;
 
   document.body.classList.add('miss-flash');
-setTimeout(() => document.body.classList.remove('miss-flash'), 0);
+  clearTimeout(missFlashTimer);
+  missFlashTimer = setTimeout(() => {
+    document.body.classList.remove('miss-flash');
+    missFlashTimer = null;
+  }, 120);
 
   allowInput = false;
   setTimeout(() => {
@@ -1446,6 +1465,10 @@ for (let i = 0; i < HOLE_COUNT; i++) {
       running = false;
       clearInterval(timerInterval);
       clearInterval(spawnWatchInterval);
+      stopFever();
+      clearTimeout(missFlashTimer);
+      missFlashTimer = null;
+      document.body.classList.remove('miss-flash');
 holeTimers.forEach((t, i) => {
   clearTimeout(t.spawnTimer);
   clearTimeout(t.hideTimer);
@@ -1517,6 +1540,14 @@ bindActionPress(pauseBtn, () => {
       t.hideTimer = null;
     });
 
+    if (fever && feverTimer) {
+      const elapsed = Date.now() - feverStartedAt;
+      feverRemainingMs = Math.max(0, feverRemainingMs - elapsed);
+      clearTimeout(feverTimer);
+      feverTimer = null;
+      feverStartedAt = 0;
+    }
+
     pauseBtn.style.backgroundImage = "url('assets/ja.png')";
   } else {
     appEl.classList.remove('paused');
@@ -1534,6 +1565,10 @@ bindActionPress(pauseBtn, () => {
       timeValue.textContent = `${timeLeft}초`;
       if (timeLeft <= 0) endGame();
     }, 1000);
+
+    if (fever && feverRemainingMs > 0 && !feverTimer) {
+      armFeverTimer(feverRemainingMs);
+    }
   }
 });
 
