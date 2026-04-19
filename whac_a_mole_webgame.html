@@ -706,6 +706,9 @@
     const progressFill = document.getElementById('progressFill');
 
     const GAME_TIME = 30;
+    const EASY_START_DURATION = 10; // 시작 10초는 천천히 출현
+    const EASY_START_DELAY_FACTOR = 1.6;
+    const EASY_START_VISIBLE_FACTOR = 1.45;
     const HOLE_COUNT = 9;
     const MAX_ACTIVE = 3;
     const BONUS_TIMER_CHANCE = 0.035; // +3초 두더지 출현 빈도 하향
@@ -881,6 +884,15 @@
       return holeActive.reduce((n, v) => n + (v ? 1 : 0), 0);
     }
 
+    function getEaseFactor(startFactor = EASY_START_DELAY_FACTOR) {
+      if (!running) return startFactor;
+      const elapsed = GAME_TIME - timeLeft;
+      if (elapsed <= 0) return startFactor;
+      if (elapsed >= EASY_START_DURATION) return 1;
+      const progress = elapsed / EASY_START_DURATION;
+      return startFactor - ((startFactor - 1) * progress);
+    }
+
     function scheduleFreeSlots() {
       if (Math.random() < 0.2) {
         const pattern = SPAWN_PATTERNS[Math.floor(Math.random() * SPAWN_PATTERNS.length)];
@@ -926,8 +938,9 @@
     function scheduleSpawn(i, delay = 900 + Math.random() * 700) {
       if (paused) return;
       const timers = holeTimers[i];
+      const easedDelay = delay * getEaseFactor(EASY_START_DELAY_FACTOR);
       clearTimeout(timers.spawnTimer);
-      timers.spawnTimer = setTimeout(() => spawnMole(i), delay);
+      timers.spawnTimer = setTimeout(() => spawnMole(i), easedDelay);
     }
 
     function spawnMole(i) {
@@ -960,7 +973,8 @@
       cell.classList.add('up');
       holeActive[i] = true;
 
-      const visibleFor = Math.max(1200, holeSpeed[i] + Math.random() * 400);
+      const visibleFactor = getEaseFactor(EASY_START_VISIBLE_FACTOR);
+      const visibleFor = Math.max(1200, (holeSpeed[i] + Math.random() * 400) * visibleFactor);
       timers.hideTimer = setTimeout(() => {
         hideMole(i);
         scheduleSpawn(i);
